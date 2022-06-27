@@ -22,7 +22,6 @@
             qs_snapshot_name: "quiesce_snapshot_{{ lookup('pipe', 'date +%Y-%m-%d-%H-%M-%S') }}"
             backup_script_dir: "/etc/vmware-tools/backupScripts.d"
             vss_shell_script: "vss_script_sh.sh"
-            vss_bin_script: "vss_script_bin_{{ guest_os_bit | replace('-', '') }}"
             vss_log_path: "/vss.log"
             vss_content: ""
 
@@ -44,7 +43,7 @@
         # Copy pre-freeze-script and post-thaw-script to /usr/sbin/
         - name: Copy custom script pre-freeze-script and post-thaw-script to /usr/sbin
           copy:
-            src: "{{ vss_bin_script }}"
+            src: "{{ vss_shell_script }}"
             dest: "/usr/sbin/{{ item }}"
             mode: 0755
           with_items:
