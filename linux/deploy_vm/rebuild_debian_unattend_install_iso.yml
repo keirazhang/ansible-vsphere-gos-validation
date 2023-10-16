@@ -54,15 +54,15 @@
       set timeout=5
       menuentry "Automated installation" --id autoinstall {
           set background_color=black
-          linux    /{{ debian_install_type }}/vmlinuz auto=true file=/cdrom/{{ unattend_install_file_name }} vga=788 --- quiet
-          initrd   /{{ debian_install_type }}/gtk/initrd.gz
+          linux /{{ debian_install_type }}/vmlinuz auto=true file=/cdrom/{{ unattend_install_file_name }} vga=788 consoleblank=0 --- quiet
+          initrd /{{ debian_install_type }}/gtk/initrd.gz
       }
 
 - name: "Update boot menu with preseed.cfg for Debian"
   ansible.builtin.replace:
     path: "{{ src_iso_file_dir }}/gtk.cfg"
     regexp: '(.*)(initrd.gz )(.*)'
-    replace: "\\1\\2 auto=true file=/cdrom/{{ unattend_install_file_name }} \\3"
+    replace: "\\1\\2 auto=true file=/cdrom/{{ unattend_install_file_name }} consoleblank=0 \\3"
 
 - name: "Update md5sum for Debian ISO files"
   ansible.builtin.shell: "{{ item }}"
@@ -77,6 +77,17 @@
 
 - name: "Print command output for updating initrd"
   ansible.builtin.debug: var=update_initrd_output
+
+- name: "Create preseed post install script"
+  ansible.builtin.template:
+    src: "templates/{{ post_install_script_file }}"
+    dest: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
+    mode: "0755"
+
+- name: "Copy preseed post install script to log folder"
+  ansible.builtin.copy:
+    src: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
+    dest: "{{ current_test_log_folder }}/{{ post_install_script_file }}"
 
 - name: "Customize the ISO"
   community.general.iso_customize:
@@ -93,3 +104,5 @@
         dest_file: "md5sum.txt"
       - src_file: "{{ new_unattend_install_conf }}"
         dest_file: "{{ unattend_install_file_name }}"
+      - src_file: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
+        dest_file: "{{ post_install_script_file }}"

@@ -5,12 +5,16 @@
   ansible.builtin.set_fact:
     unattend_install_template: "{{ main_playbook_path }}/autoinstall/{{ unattend_install_conf }}"
 
-- ansible.builtin.debug:
-    msg:
-      - "The unattend install config file is {{ unattend_install_template }}"
+- name: "Display unattend install config file template"
+  ansible.builtin.debug:
+    msg: "The unattend install config file is {{ unattend_install_template }}"
 
 # unattend_install_conf is not for Ubuntu Server, Ubuntu Desktop 23.04 and later
-- block:
+- name: "Create unattend install ISO for guest OS"
+  when:
+    - unattend_install_conf is not match('Ubuntu/Server/')
+    - unattend_install_conf is not match('Ubuntu/Desktop/Subiquity')
+  block:
     - name: "Create temp folder for generating unattend install ISO file"
       include_tasks: ../../common/create_temp_file_dir.yml
       vars:
@@ -35,14 +39,20 @@
         new_unattend_install_conf: "{{ unattend_iso_cache }}/{{ unattend_install_template.split('/')[-1] }}"
         generated_unattend_iso: "{{ unattend_iso_cache }}/{{ unattend_iso_file_name }}"
 
-    - ansible.builtin.debug:
-        msg:
-          - "The unattend install config file to be generated is {{ new_unattend_install_conf }}"
+    - name: "Display the unattend install config file path to be generated"
+      ansible.builtin.debug:
+        msg: "The unattend install config file to be generated is {{ new_unattend_install_conf }}"
 
     # For nvme boot disk, boot device name shoule be nvme0n1 instead of sda
     - name: "Set boot disk name"
       ansible.builtin.set_fact:
         boot_disk_name: "{{ 'nvme0n1' if boot_disk_controller == 'nvme' else 'sda' }}"
+
+    - name: "Set fact of post install script file"
+      ansible.builtin.set_fact:
+        autoinstall_start_msg: "Autoinstall is started"
+        post_install_script_file: "preseed_late_command.sh"
+      when: unattend_install_conf is match('Debian')
 
     - name: "Create unattend config file from template"
       ansible.builtin.template:
@@ -67,7 +77,7 @@
         - unattend_install_conf is not match('FreeBSD')
         - unattend_install_conf is not match('Pardus')
 
-    - name: "Build unattend install config file into OS ISO image"
+    - name: "Rebuild OS ISO image with unattend install config file built-in"
       include_tasks: rebuild_unattend_install_iso.yml
       vars:
         rebuilt_unattend_iso_path: "{{ generated_unattend_iso }}"
@@ -77,18 +87,19 @@
         unattend_install_conf is match('Ubuntu/Desktop/Ubiquity') or
         unattend_install_conf is match('FreeBSD') or
         unattend_install_conf is match('Pardus')
-  when:
-    - unattend_install_conf is not match('Ubuntu/Server/')
-    - unattend_install_conf is not match('Ubuntu/Desktop/Subiquity')
 
 # unattend_install_conf is for Ubuntu Server / Ubuntu desktop 23.04 or later
-- block:
+- name: "Create unattend install ISO for Ubuntu Server, Ubuntu desktop 23.04 or later"
+  when: >
+    unattend_install_conf is match('Ubuntu/Server/') or
+    unattend_install_conf is match('Ubuntu/Desktop/Subiquity')
+  block:
     - name: "Set fact for autoinstall start message to be printed to VM serial port"
       ansible.builtin.set_fact:
         autoinstall_start_msg: "Ubuntu autoinstall is started with IPv4 address:"
 
-    # Create the Ubuntu seed ISO to modify login information
-    - include_tasks: ../utils/create_seed_iso.yml
+    - name: "Create the Ubuntu seed ISO to modify login information"
+      include_tasks: ../utils/create_seed_iso.yml
       vars:
         user_data_template: "{{ unattend_install_template }}"
         local_hostname: "ubuntu-{{ hostname_timestamp }}"
@@ -101,12 +112,13 @@
         unattend_iso_file_name: "{{ lookup('pipe','date +%s') }}-{{ seed_iso_path | basename }}"
         new_os_installation_iso: "{{ lookup('pipe','date +%s') }}_{{ os_installation_iso_list[0].split()[1] | basename }}"
 
-    - include_tasks: rebuild_unattend_install_iso.yml
+    - name: "Rebuild Ubuntu ISO for fully automated install"
+      include_tasks: rebuild_unattend_install_iso.yml
       vars:
         rebuilt_unattend_iso_path: "{{ unattend_iso_cache }}/{{ new_os_installation_iso }}"
 
-    # Upload Ubuntu fully automated install ISO to ESXi datastore
-    - include_tasks: ../../common/esxi_upload_datastore_file.yml
+    - name: "Upload Ubuntu ISO for fully automated install to ESXi datastore"
+      include_tasks: ../../common/esxi_upload_datastore_file.yml
       vars:
         src_file_path: "{{ unattend_iso_cache }}/{{ new_os_installation_iso }}"
         dest_file_path: "{{ new_os_installation_iso }}"
@@ -116,21 +128,19 @@
       ansible.builtin.set_fact:
         os_installation_iso_list: ["[{{ datastore }}] {{ new_os_installation_iso }}"]
         os_install_iso_list_len: 1
-  when: >
-    unattend_install_conf is match('Ubuntu/Server/') or
-    unattend_install_conf is match('Ubuntu/Desktop/Subiquity')
 
 - name: "Set fact of unattended install ISO path on datastore {{ datastore }}"
   ansible.builtin.set_fact:
     transferred_unattend_iso: "[{{ datastore }}] {{ unattend_iso_file_name }}"
 
-- ansible.builtin.debug:
+- name: "Display the unattend install ISO paths at local and ESXi server"
+  ansible.builtin.debug:
     msg:
       - "The unattend install ISO generated is {{ generated_unattend_iso }}"
       - "The unattend install ISO will be uploaded to '{{ transferred_unattend_iso }}' on ESXi host"
 
-# Upload unattend install ISO to ESXi datastore
-- include_tasks: ../../common/esxi_upload_datastore_file.yml
+- name: "Upload generated unattend install ISO to ESXi datastore"
+  include_tasks: ../../common/esxi_upload_datastore_file.yml
   vars:
     src_file_path: "{{ generated_unattend_iso }}"
     dest_file_path: "{{ unattend_iso_file_name }}"
