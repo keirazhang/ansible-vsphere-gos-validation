@@ -40,6 +40,12 @@
         dest: "{{ current_test_log_folder }}/vm_properties.json"
         content: "{{ vm_config | to_nice_json }}"
 
+    - name: "Send a TAB key to active screen in case it is blank"
+      include_tasks: ../../../common/vm_guest_send_key.yml
+      vars:
+        keys_send:
+          - TAB
+
     - name: "Take a screenshot at VM current state"
       include_tasks: vm_take_screenshot.yml
       vars:
