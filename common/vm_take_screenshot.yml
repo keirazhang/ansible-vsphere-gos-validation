@@ -2,11 +2,17 @@
 # SPDX-License-Identifier: BSD-2-Clause
 ---
 # Capture the specified VM console screenshot and transfer screenshot
-# file to local path if 'vm_take_screenshot_local_path' is defined.
+# file to local path if 'vm_screenshot_local_dir' is defined.
 # Parameters:
-#   vm_take_screenshot_path(optional): the local path of the screenshot file
+#   vm_screenshot_local_dir(optional): the local dir path for the screenshot taken from VM
+# Return:
+#   vm_screenshot_local_file: the local file path of the screenshot taken from VM
 #
-- name: "Take VM '{{ vm_name }}' console screenshot"
+- name: "Initialize the fact of local file path for the VM screenshot"
+  ansible.builtin.set_fact:
+    vm_screenshot_local_file: ""
+
+- name: "Take console screenshot for VM '{{ vm_name }}'"
   community.vmware.vmware_guest_screenshot:
     validate_certs: "{{ validate_certs | default(false) }}"
     hostname: "{{ vsphere_host_name }}"
@@ -15,9 +21,21 @@
     datacenter: "{{ vsphere_host_datacenter }}"
     folder: "{{ vm_folder }}"
     name: "{{ vm_name }}"
-    local_path: "{{ vm_take_screenshot_local_path | default(omit) }}"
-  register: vm_take_screnshot_result
+    local_path: "{{ vm_screenshot_local_dir | default(omit) }}"
+  register: vm_take_screenshot_result
   failed_when: false
-- name: Display taking VM screenshot result
-  ansible.builtin.debug: var=vm_take_screnshot_result
+
+- name: "Display taking VM screenshot result"
+  ansible.builtin.debug: var=vm_take_screenshot_result
   when: enable_debug is defined and enable_debug
+
+- name: "Set fact of local file path for the VM screenshot"
+  ansible.builtin.set_fact:
+    vm_screenshot_local_file: "{{ vm_take_screenshot_result.download_local_path }}/{{ vm_take_screenshot_result.screenshot_file | basename }}"
+  when:
+    - vm_screenshot_local_dir is defined
+    - vm_screenshot_local_dir
+    - vm_take_screenshot_result.download_local_path is defined
+    - vm_take_screenshot_result.download_local_path
+    - vm_take_screenshot_result.screenshot_file is defined
+    - vm_take_screenshot_result.screenshot_file

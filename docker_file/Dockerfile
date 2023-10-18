@@ -10,8 +10,10 @@ WORKDIR /root/ansible-vsphere-gos-validation
 RUN tdnf makecache && \
     tdnf install -y python3 zip vim wget python3-pip \
     sshpass gawk nfs-utils iana-etc python3-lxml python3-setuptools \
-    python3-wheel  python3-jmespath python3-netaddr && \
-    pip3 install pycdlib pywinrm pyvmomi pypsrp passlib
+    python3-wheel python3-jmespath python3-netaddr
+
+# Install python modules
+RUN pip3 install pycdlib pywinrm pyvmomi pypsrp passlib pytesseract
 
 # Install ansible-core (starts from Ansible 2.11)
 RUN pip3 install ansible-core

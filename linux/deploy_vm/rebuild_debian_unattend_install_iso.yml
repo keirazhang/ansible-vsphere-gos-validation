@@ -80,7 +80,7 @@
 
 - name: "Create preseed post install script"
   ansible.builtin.template:
-    src: "templates/{{ post_install_script_file }}"
+    src: "templates/post_install_scripts/{{ post_install_script_file }}"
     dest: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
     mode: "0755"
 

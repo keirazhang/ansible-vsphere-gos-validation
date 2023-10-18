@@ -190,11 +190,36 @@
         vm_wait_log_msg: "{{ autoinstall_complete_msg }}"
         vm_wait_log_delay: 30
         vm_wait_log_retries: 120
+        vm_wait_log_ignore_errors: True
 
-    - name: "Take a screenshot when autoinstall complete message is received"
-      include_tasks: ../../common/vm_take_screenshot.yml
-      vars:
-        vm_take_screenshot_local_path: "{{ current_test_log_folder }}"
+    - name: "Extract error messages for autoinstall failure"
+      when: not vm_wait_log_msg_success
+      block:
+        - name: "Send a TAB key to active screen in case it is blank"
+          include_tasks: common/vm_guest_send_key.yml
+          vars:
+            keys_send:
+              - TAB
+
+        - name: "Take a screenshot when autoinstall complete message is not received"
+          include_tasks: ../../common/vm_take_screenshot.yml
+          vars:
+            vm_screenshot_local_dir: "{{ current_test_log_folder }}"
+
+        - name: "Extract text from screenshot"
+          include_tasks: ../../common/extract_text_from_image.yml
+          vars:
+            extract_image_path: "{{ vm_screenshot_local_file }}"
+
+        - name: "Collect serial port log"
+          include_tasks: collect_serial_port_log.yml
+
+#        - name: "Extract error messages from serial port log"
+#        TBD
+
+        - name: "OS autoinstall failed"
+          ansible.builtin.fail:
+            msg: "OS autoinstall failed, and extracted text from screennshot: {{ extract_image_text }}"
 
     # VMware Photon OS kickstart file can't add shutdown action,
     # so here needs to shutdown it separately

@@ -11,4 +11,5 @@ pywinrm
 pypsrp
 pyvmomi
 passlib
+pytesseract
 ansible-core
