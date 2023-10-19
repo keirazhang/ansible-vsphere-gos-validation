@@ -3,6 +3,10 @@
 ---
 # Collect VM serial port log file
 #
+- name: "Initialize the path of downloaded serial port log"
+  ansible.builtin.set_fact:
+    vm_serial_file_local_path: ""
+
 - name: "Collect VM serial port log"
   when:
     - vm_dir_name is defined
@@ -21,3 +25,13 @@
         src_file_path: "{{ vm_dir_name }}/{{ vm_serial_port_file_name }}"
         dest_file_path: "{{ current_test_log_folder }}/{{ vm_serial_port_file_name }}"
         download_file_fail_ignore: true
+
+    - name: "Check downloaded VM serial log at local"
+      include_tasks: ../utils/get_file_stat_info.yml
+      vars:
+        guest_file_path: "{{ current_test_log_folder }}/{{ vm_serial_port_file_name }}"
+
+    - name: "Set fact of downloaded VM serial log path at local"
+      ansible.builtin.set_fact:
+        vm_serial_file_local_path: "{{ current_test_log_folder }}/{{ vm_serial_port_file_name }}"
+      when: guest_file_exists

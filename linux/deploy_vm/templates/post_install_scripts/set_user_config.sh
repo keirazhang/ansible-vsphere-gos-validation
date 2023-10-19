@@ -40,13 +40,13 @@ if [[ "$OS_DM" =~ gdm ]]; then
     fi
 
     # Auto login
-    {% if new_user is defined and new_user != 'root' %}
+{% if new_user is defined and new_user != 'root' %}
     echo "Enable auto login for new user {{ new_user }}"
     sed -ri 's/#? *AutomaticLogin *=.*$/AutomaticLogin={{ new_user }}/' $OS_DM_CONF
-    {% else %}
+{% else %}
     echo "Enable auto login for root"
     sed -ri 's/#? *AutomaticLogin *=.*$/AutomaticLogin=root/' $OS_DM_CONF
-    {% endif %}
+{% endif %}
     sed -ri 's/#? *AutomaticLoginEnable *=.*$/AutomaticLoginEnable=true/' $OS_DM_CONF
 
     # Disable screen lock

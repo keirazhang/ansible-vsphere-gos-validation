@@ -43,4 +43,4 @@ fi
 
 {% include 'set_sshd.sh' %}
 
-{% include 'post_user_settings.sh' %}
+{% include 'set_user_config.sh' %}
