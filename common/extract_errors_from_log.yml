@@ -1,0 +1,47 @@
+# Copyright 2023 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Extract call trace or other error messages from a log file
+# Parameters:
+#   local_log_path: The local log file path to extract call trace and errors
+# Return:
+#   calltrace_in_log: The call trace extracted from the log file
+#   errors_in_log: The error or fail messages extracted from the log file
+#
+- name: "Check the local log path is an absolute path"
+  ansible.builtin.assert:
+    that:
+      - local_log_path is defined
+      - local_log_path
+      - local_log_path is ansible.builtin.abs
+    fail_msg: "Parameter 'local_log_path' must be set with a local absolute path"
+
+- name: "Initialize the facts of extracted call trace and errors from log"
+  ansible.builtin.set_fact:
+    calltrace_in_log: []
+    errors_in_log: []
+
+- name: "Extract call trace from log file"
+  ansible.builtin.script: "../tools/extractor.py -t calltrace -f {{ local_log_path }}"
+  ignore_errors: True
+  register: extract_calltrace_result
+
+- name: "Set fact of extracted call trace in log file"
+  ansible.builtin.set_fact:
+    calltrace_in_log: "{{ extract_calltrace_result.stdout_lines | select }}"
+  when:
+    - extract_calltrace_result.stdout_lines is defined
+    - extract_calltrace_result.stdout_lines | length > 0
+
+- name: "Extract error messages from log file"
+  ansible.builtin.shell: "grep -Pi 'error|fail' {{ local_log_path }}"
+  ignore_errors: True
+  changed_when: False
+  register: extract_error_result
+
+- name: "Set fact of error messages in log file"
+  ansible.builtin.set_fact:
+    errors_in_log: "{{ extract_error_result.stdout_lines | select | unique }}"
+  when:
+    - extract_error_result.stdout_lines is defined
+    - extract_error_result.stdout_lines | length > 0

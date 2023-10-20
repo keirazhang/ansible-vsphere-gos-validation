@@ -3,30 +3,31 @@
 ---
 # Extract text from an image file
 # Parameters:
-#   extract_image_path: The local image file path to extract text
+#   local_image_path: The local image file path to extract text
 # Return:
-#   extracted_image_text: The text extracted from the image file
+#   text_in_image: The text extracted from the image file
 #
+- debug: var=local_image_path
 - name: "Check local image file path is an absolute path"
   ansible.builtin.assert:
     that:
-      - extract_image_path is defined
-      - extract_image_path
-      - extract_image_path is ansible.builtin.abs
-    fail_msg: "Parameter 'extract_image_path' must be set with a local absolute path"
+      - local_image_path is defined
+      - local_image_path
+      - local_image_path is ansible.builtin.abs
+    fail_msg: "Parameter 'local_image_path' must be set with a local absolute path"
 
 - name: "Initialize the fact of extracted image text"
   ansible.builtin.set_fact:
-    extracted_image_text: []
+    text_in_image: []
 
 - name: "Extract text from local image"
-  ansible.builtin.script: "../tools/extractor.py -t text -f {{ extract_image_path }}"
+  ansible.builtin.script: "../tools/extractor.py -t text -f {{ local_image_path }}"
   ignore_errors: True
   register: extract_text_result
 
 - name: "Set fact of extracted image text"
   ansible.builtin.set_fact:
-    extracted_image_text: "{{ extract_text_result.stdout_lines | select }}"
+    text_in_image: "{{ extract_text_result.stdout_lines | select }}"
   when:
     - extract_text_result.stdout_lines is defined
     - extract_text_result.stdout_lines | length > 0

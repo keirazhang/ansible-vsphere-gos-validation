@@ -31,11 +31,14 @@
 
 - name: "Set fact of local file path for the VM screenshot"
   ansible.builtin.set_fact:
-    vm_screenshot_local_file: "{{ vm_take_screenshot_result.download_local_path }}/{{ vm_take_screenshot_result.screenshot_file | basename }}"
+    vm_screenshot_local_file: >-
+      {{
+        [vm_take_screenshot_result.screenshot_info.download_local_path,
+         vm_take_screenshot_result.screenshot_info.screenshot_file | basename] |
+        path_join
+      }}
   when:
-    - vm_screenshot_local_dir is defined
-    - vm_screenshot_local_dir
-    - vm_take_screenshot_result.download_local_path is defined
-    - vm_take_screenshot_result.download_local_path
-    - vm_take_screenshot_result.screenshot_file is defined
-    - vm_take_screenshot_result.screenshot_file
+    - vm_take_screenshot_result.screenshot_info.download_local_path is defined
+    - vm_take_screenshot_result.screenshot_info.download_local_path
+    - vm_take_screenshot_result.screenshot_info.screenshot_file is defined
+    - vm_take_screenshot_result.screenshot_info.screenshot_file

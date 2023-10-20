@@ -9,6 +9,7 @@
     boot_disk_controller: "{{ boot_disk_controller if (boot_disk_controller is defined and boot_disk_controller) else 'paravirtual' }}"
     firmware: "{{ firmware if (firmware is defined and firmware) else 'efi' }}"
     network_adapter_type: "{{ network_adapter_type if (network_adapter_type is defined and network_adapter_type) else 'vmxnet3' }}"
+    autoinstall_start_msg: "Autoinstall is started"
     autoinstall_complete_msg: "Autoinstall is completed."
 
 - name: "Set CPU number to {{ cpu_cores_per_socket }}"
@@ -209,50 +210,21 @@
         - name: "Extract text from screenshot"
           include_tasks: ../../common/extract_text_from_image.yml
           vars:
-            extract_image_path: "{{ vm_screenshot_local_file }}"
-
-        - name: "Set facts of extracted error messages from serial port file"
-          ansible.builtin.set_fact:
-            errors_in_serial_file: []
+            local_image_path: "{{ vm_screenshot_local_file }}"
 
         - name: "Collect serial port log"
           include_tasks: collect_serial_port_log.yml
 
         - name: "Extract errors from serial port file"
+          include_tasks: ../../common/extract_errors_from_log.yml
+          vars:
+            local_log_path: "{{ vm_serial_file_local_path }}"
           when: vm_serial_file_local_path
-          block:
-            - name: "Extract call trace from serial port file"
-              include_tasks: ../../common/extract_calltrace_from_log.yml
-              vars:
-                extract_log_path: "{{ vm_serial_file_local_path }}"
-
-            - name: "Set fact of call trace errors in serial port file"
-              ansible.builtin.set_fact:
-                errors_in_serial_file: "{{ extracted_call_trace }}"
-              when: extracted_call_trace | length > 0
-
-            - name: "No call trace found. Look for other error messages"
-              when: extracted_call_trace | length == 0
-              block:
-                - name: "Look for error messages from serial port file"
-                  ansible.builtin.shell: "grep -Pi 'error|fail' {{ vm_serial_file_local_path }}"
-                  ignore_errors: True
-                  changed_when: False
-                  register: lookfor_error_result
-
-                - name: "Set fact of other errors in serial port file"
-                  ansible.builtin.set_fact:
-                    errors_in_serial_file: "{{ lookfor_error_result.stdout_lines | select | unique }}"
-                  when:
-                    - lookfor_error_result.stdout_lines is defined
-                    - lookfor_error_result.stdout_lines | length > 0
 
         - name: "OS autoinstall failed"
           ansible.builtin.fail:
-            msg: '{{ ["OS autoinstall failed", "Extracted text from screenshot:"] +  
-                  extracted_image_text +
-                  ["Extracted errors from serial port file:"] +
-                  errors_in_serial_file }}'
+            msg: '{{ ["Screenshot text:"] + text_in_image +
+                  ["Errors in serial port file:"] + calltrace_in_log + errors_in_log }}'
 
     # VMware Photon OS kickstart file can't add shutdown action,
     # so here needs to shutdown it separately

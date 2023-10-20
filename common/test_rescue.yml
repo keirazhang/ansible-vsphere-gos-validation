@@ -49,7 +49,7 @@
     - name: "Take a screenshot at VM current state"
       include_tasks: vm_take_screenshot.yml
       vars:
-        vm_take_screenshot_local_path: "{{ current_test_log_folder }}"
+        vm_screenshot_local_dir: "{{ current_test_log_folder }}"
 
     - name: "Download VM's vmware.log"
       include_tasks: esxi_download_datastore_file.yml

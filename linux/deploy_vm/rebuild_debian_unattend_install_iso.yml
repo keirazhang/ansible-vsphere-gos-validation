@@ -5,12 +5,12 @@
 # Parameters:
 #   rebuilt_unattend_iso_path: Local path to the rebuilt ISO image with unattend install config file
 #   src_iso_file_path: Local path of source ISO image file
-#   src_iso_file_dir: Local dir of source ISO image file
+#   unattend_iso_cache: Local cache dir for saving unattend install ISO and config files
 #
 - name: "Extract specific files inside ISO"
   community.general.iso_extract:
     image: "{{ src_iso_file_path }}"
-    dest: "{{ src_iso_file_dir }}"
+    dest: "{{ unattend_iso_cache }}"
     files:
       - 'boot/grub/grub.cfg'
       - 'isolinux/isolinux.cfg'
@@ -19,12 +19,12 @@
 
 - name: "Update timeout for boot menu"
   ansible.builtin.replace:
-    path: "{{ src_iso_file_dir }}/isolinux.cfg"
+    path: "{{ unattend_iso_cache }}/isolinux.cfg"
     regexp: "timeout 0"
     replace: "timeout 1"
 
 - name: "Search string in md5sum.txt"
-  ansible.builtin.shell: grep '/install.386/' {{ src_iso_file_dir }}/md5sum.txt
+  ansible.builtin.shell: "grep '/install.386/' {{ unattend_iso_cache }}/md5sum.txt"
   ignore_errors: true
   register: result_search_str
 
@@ -42,13 +42,13 @@
 
 - name: "Update timeout for boot menu"
   ansible.builtin.replace:
-    path: "{{ src_iso_file_dir }}/isolinux.cfg"
+    path: "{{ unattend_iso_cache }}/isolinux.cfg"
     regexp: "default .*"
     replace: "default installgui"
 
 - name: "Update Debian grub.cfg for autoinstall"
   ansible.builtin.blockinfile:
-    path: "{{ src_iso_file_dir }}/grub.cfg"
+    path: "{{ unattend_iso_cache }}/grub.cfg"
     block: |
       set default="autoinstall"
       set timeout=5
@@ -60,7 +60,7 @@
 
 - name: "Update boot menu with preseed.cfg for Debian"
   ansible.builtin.replace:
-    path: "{{ src_iso_file_dir }}/gtk.cfg"
+    path: "{{ unattend_iso_cache }}/gtk.cfg"
     regexp: '(.*)(initrd.gz )(.*)'
     replace: "\\1\\2 auto=true file=/cdrom/{{ unattend_install_file_name }} consoleblank=0 \\3"
 
@@ -72,37 +72,28 @@
     - "sed -i '#./boot/grub/grub.cfg#d' md5sum.txt"
     - "echo \"`md5sum grub.cfg | awk '{print $1}'` ./boot/grub/grub.cfg\" >>md5sum.txt"
   args:
-    chdir: "{{ src_iso_file_dir }}"
-  register: update_initrd_output
+    chdir: "{{ unattend_iso_cache }}"
+  register: update_md5sum_result
 
-- name: "Print command output for updating initrd"
-  ansible.builtin.debug: var=update_initrd_output
+- name: "Print command output for updating files' md5sum"
+  ansible.builtin.debug: var=update_md5sum_result
 
-- name: "Create preseed post install script"
-  ansible.builtin.template:
-    src: "templates/post_install_scripts/{{ post_install_script_file }}"
-    dest: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
-    mode: "0755"
-
-- name: "Copy preseed post install script to log folder"
-  ansible.builtin.copy:
-    src: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
-    dest: "{{ current_test_log_folder }}/{{ post_install_script_file }}"
-
-- name: "Customize the ISO"
+- name: "Rebuild Debian ISO image with fully auto install configs"
   community.general.iso_customize:
     src_iso: "{{ src_iso_file_path }}"
     dest_iso: "{{ rebuilt_unattend_iso_path }}"
     add_files:
-      - src_file: "{{ src_iso_file_dir }}/grub.cfg"
+      - src_file: "{{ unattend_iso_cache }}/grub.cfg"
         dest_file: "boot/grub/grub.cfg"
-      - src_file: "{{ src_iso_file_dir }}/isolinux.cfg"
+      - src_file: "{{ unattend_iso_cache }}/isolinux.cfg"
         dest_file: "isolinux/isolinux.cfg"
-      - src_file: "{{ src_iso_file_dir }}/gtk.cfg"
+      - src_file: "{{ unattend_iso_cache }}/gtk.cfg"
         dest_file: "isolinux/gtk.cfg"
-      - src_file: "{{ src_iso_file_dir }}/md5sum.txt"
+      - src_file: "{{ unattend_iso_cache }}/md5sum.txt"
         dest_file: "md5sum.txt"
       - src_file: "{{ new_unattend_install_conf }}"
         dest_file: "{{ unattend_install_file_name }}"
-      - src_file: "{{ src_iso_file_dir }}/{{ post_install_script_file }}"
+      - src_file: "{{ unattend_iso_cache }}/{{ pre_install_script_file }}"
+        dest_file: "{{ pre_install_script_file }}"
+      - src_file: "{{ unattend_iso_cache }}/{{ post_install_script_file }}"
         dest_file: "{{ post_install_script_file }}"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Get OS information
 {% include 'get_os_info.sh' %}

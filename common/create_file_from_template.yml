@@ -1,0 +1,25 @@
+# Copyright 2023 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Create a file from template
+# Parameters:
+#   template_src_path: The local path to template source file
+#   template_dest_path: The local path to template destination file
+#   template_dest_mode: The file mode of template destination file
+#   save_dest_in_log_folder: If true, copy the new file to test log folder
+# Return:
+#   local_new_file_path: The created new file path
+#
+- name: "Create a new file from template {{ template_src_path }}"
+  ansible.builtin.template:
+    src: "{{ template_src_path }}"
+    dest: "{{ template_dest_path }}"
+    mode: "{{ template_dest_mode | default('0644') }}"
+
+- name: "Copy new file to test log folder"
+  ansible.builtin.copy:
+    src: "{{ template_dest_path }}"
+    dest: "{{ current_test_log_folder }}/{{ template_dest_path | basename }}"
+  when:
+    - save_dest_in_log_folder is defined
+    - save_dest_in_log_folder

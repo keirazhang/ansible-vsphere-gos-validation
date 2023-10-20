@@ -48,17 +48,8 @@
       ansible.builtin.set_fact:
         boot_disk_name: "{{ 'nvme0n1' if boot_disk_controller == 'nvme' else 'sda' }}"
 
-    - name: "Set fact of post install script file"
-      ansible.builtin.set_fact:
-        autoinstall_start_msg: "Autoinstall is started"
-        post_install_script_file: "preseed_late_command.sh"
-      when: unattend_install_conf is match('Debian')
-
-    - name: "Create unattend config file from template"
-      ansible.builtin.template:
-        src: "{{ unattend_install_template }}"
-        dest: "{{ new_unattend_install_conf }}"
-        mode: "0644"
+    - name: "Create unattend install config file"
+      include_tasks: create_unattend_install_conf_file.yml
 
     - name: "Print the content of unattend install config file"
       ansible.builtin.debug:
