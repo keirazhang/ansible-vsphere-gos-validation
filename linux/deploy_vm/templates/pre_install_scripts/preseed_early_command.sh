@@ -11,8 +11,6 @@ done
 
 echo "Print installer scripts"
 for i in `ls /lib/debian-installer.d` ; do
-    echo "/lib/installer.d/$i"
-    cat /lib/installer.d/$i
+    echo "/lib/debian-installer.d/$i"
+    cat /lib/debian-installer.d/$i
 done
-
-exit 1

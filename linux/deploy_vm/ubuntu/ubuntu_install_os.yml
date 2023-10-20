@@ -6,17 +6,11 @@
   when: ubuntu_install_method is defined and ubuntu_install_method == "simulation"
 
 # Wait for autoinstall start message in serial port output file
-- name: "Wait for Ubuntu autoinstall is started successfully"
-  when: ubuntu_install_method is defined and ubuntu_install_method == "cloud-init"
+- name: "Check Ubuntu obtained IPv4 address at autoinstall start"
+  when:
+    - autoinstall_start_msg is defined
+    - autoinstall_start_msg
   block:
-    - name: "Wait for autoinstall start message"
-      include_tasks: ../../../common/vm_wait_log_msg.yml
-      vars:
-        vm_wait_log_name: "{{ vm_serial_port_output_file | basename }}"
-        vm_wait_log_msg: "{{ autoinstall_start_msg }}[^\\r\\n]*"
-        vm_wait_log_retries: 150
-        vm_wait_log_delay: 5
-
     # Ubuntu autoinstall with cloud configs requires network connection.
     # When autoinstall start message is detected, its must be followed with an IPv4
     # address get at early-commands in the unattend install config file.

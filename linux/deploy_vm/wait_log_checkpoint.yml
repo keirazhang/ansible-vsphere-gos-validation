@@ -1,0 +1,21 @@
+# Copyright 2023 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Wait for a checkpoint in VM's log file. If fail, collect errors from
+# screenshot and log file
+# Parameters:
+#   wait_log_file_name: The log file name to wait for the checkpoint,
+#     which could be vmware.log or serial port file
+#   wait_retires: Retry count for waiting the checkpoint
+#   wait_delay: The delay seconds for retry
+#   wait_msg: The checkpoint message to wait in log file
+#
+
+- name: "Wait for checkpoint message in VM log"
+  include_tasks: ../../common/vm_wait_log_msg.yml
+  vars:
+    vm_wait_log_ignore_errors: True
+
+- name: "Extract error messages at wait checkpoint failure"
+  include_tasks: collect_errors_at_failure.yml
+  when: not vm_wait_log_msg_success

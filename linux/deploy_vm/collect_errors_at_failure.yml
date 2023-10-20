@@ -1,0 +1,34 @@
+# Copyright 2023 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Collect screenshot and errors from serial log when autoinstall is not completed
+#
+- name: "Send a TAB key to active screen in case it is blank"
+  include_tasks: ../../common/vm_guest_send_key.yml
+  vars:
+    keys_send:
+      - TAB
+
+- name: "Take a screenshot when autoinstall complete message is not received"
+  include_tasks: ../../common/vm_take_screenshot.yml
+  vars:
+    vm_screenshot_local_dir: "{{ current_test_log_folder }}"
+
+- name: "Extract text from screenshot"
+  include_tasks: ../../common/extract_text_from_image.yml
+  vars:
+    local_image_path: "{{ vm_screenshot_local_file }}"
+
+- name: "Collect serial port log"
+  include_tasks: collect_serial_port_log.yml
+
+- name: "Extract errors from serial port file"
+  include_tasks: ../../common/extract_errors_from_log.yml
+  vars:
+    local_log_path: "{{ vm_serial_file_local_path }}"
+  when: vm_serial_file_local_path
+
+- name: "OS autoinstall failed"
+  ansible.builtin.fail:
+    msg: '{{ ["Screenshot text:"] + text_in_image +
+          ["Suspected logs:"] + calltrace_in_log + errors_in_log }}'
