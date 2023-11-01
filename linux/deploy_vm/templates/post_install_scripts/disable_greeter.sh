@@ -1,3 +1,4 @@
+# Disable greeter at first login
 if [[ "X$OS_DM" =~ Xgdm ]]; then
     echo "Disable GNOME initial setup at first login"
     mkdir -p -m 755 /root/.config

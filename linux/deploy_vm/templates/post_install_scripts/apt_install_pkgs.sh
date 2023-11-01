@@ -1,4 +1,20 @@
-#Install open-vm-toools from CDROM if it exists
+# Install required packages
+required_pkgs="open-vm-tools"
+{% if unattend_installer == 'Ubuntu-Ubiquity' %}
+# Ubuntu Desktop required packages
+required_pkgs="$required_pkgs open-vm-tools-desktop build-essential openssh-server vim locales cloud-init rdma-core rdmacm-utils ibverbs-utils"
+{% elif unattend_installer == 'Debian' %}
+# Debian required packages
+required_pkgs="$required_pkgs open-vm-tools-desktop cloud-init debconf-utils rdma-core rdmacm-utils ibverbs-utils"
+{% elif unattend_installer == 'Pardus' %}
+# Pardus required packages
+required_pkgs="$required_pkgs openssh-server build-essential open-vm-tools sg3-utils vim python3-apt dbus"
+if [ "X$OS_DM" != "X" ]; then
+  required_pkgs="$required_pkgs open-vm-tools-desktop"
+fi
+{% endif %}
+
+#Try to install packages from CDROM firstly
 cdrom_missing_pkgs=""
 for pkg in $required_pkgs; do
     echo "Searching package $pkg in CDROM"
@@ -16,6 +32,7 @@ for pkg in $required_pkgs; do
     fi
 done
 
+# Try to install CDROM missing package from online repo
 if [ "X$cdrom_missing_pkgs" != "X" ]; then
     echo "Adding $OS_NAME $VERSION_ID ($VERSION_CODENAME) offical online repo"
 {% if unattend_installer == 'Debian' %}

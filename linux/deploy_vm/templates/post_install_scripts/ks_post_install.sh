@@ -2,12 +2,6 @@
 # Get OS information
 {% include 'get_os_info.sh' %}
 
-{% if unattend_installer in ['Ubuntu-Ubiquity', "Debian", "Pardus"] %}
-{% include 'apt_install_pkgs.sh' %}
-{% endif %}
-
-{% include 'set_locale.sh' %}
-
 {% include 'config_ssh.sh' %}
 
 {% include 'enable_auto_login.sh' %}

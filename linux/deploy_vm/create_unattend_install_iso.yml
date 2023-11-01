@@ -73,7 +73,7 @@
         - name: "Create unattend install ISO file for {{ unattend_installer }}"
           include_tasks: ../../common/create_iso.yml
           vars:
-            create_iso_src: ["{{ new_unattend_install_conf }}"]
+            create_iso_src: "{{ [new_unattend_install_conf, pre_install_script_path, post_install_script_path] | select }}"
             create_iso_dest: "{{ unattend_iso_file_path }}"
             create_iso_vol_ident: 'OEMDRV'
 

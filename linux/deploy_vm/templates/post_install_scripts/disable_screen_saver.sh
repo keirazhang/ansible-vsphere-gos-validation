@@ -1,3 +1,4 @@
+# Disable blank screen, screen saver and automatic suspend
 if [[ "X$OS_DM" =~ Xgdm ]]; then
     echo "Disable GNOME blank screen, screen saver and automatic suspend"
     cat >/etc/dconf/profile/user <<EOF
