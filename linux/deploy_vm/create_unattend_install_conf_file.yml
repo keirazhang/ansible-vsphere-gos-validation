@@ -10,20 +10,10 @@
 - name: "Initialize facts of pre-install and post-install scripts"
   ansible.builtin.set_fact:
     autoinstall_start_msg: "Autoinstall is started"
-    pre_install_script_file: "pre_install.sh"
+    pre_install_script_file: "linux_pre_install.sh"
+    post_install_script_file: "linux_post_install.sh"
     pre_install_script_path: ""
-    post_install_script_file: ""
     post_install_script_path: ""
-
-- name: "Set facts of pre-install and post-install script files"
-  ansible.builtin.set_fact:
-    post_install_script_file: "preseed_late_command.sh"
-  when: unattend_installer in ['Ubuntu-Ubiquity', "Debian", "Pardus"]
-
-- name: "Set facts of post-install script file for {{ unattend_installer }}"
-  ansible.builtin.set_fact:
-    post_install_script_file: "ks_post_install.sh"
-  when: unattend_installer in ['CentOS', 'RHEL', 'Fedora', 'UOS', 'BCLinux', 'BCLinux-for-Euler']
 
 - name: "Create OS pre-install script"
   when: pre_install_script_file

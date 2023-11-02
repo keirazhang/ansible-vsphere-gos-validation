@@ -56,3 +56,6 @@ if [ -f /etc/systemd/system/display-manager.service ]; then
       OS_DM_CONF=""
     fi
 fi
+
+echo "Get dmesg output at post-install:"
+dmesg -c --color=never

@@ -4,6 +4,8 @@
 
 {% if unattend_installer in ['Ubuntu-Ubiquity', "Debian", "Pardus"] %}
 {% include 'apt_install_pkgs.sh' %}
+{% elif unattend_installer in ['BCLinux', 'BCLinux-for-Euler'] %}
+{% include 'bclinux_manage_pkgs.sh' %}
 {% endif %}
 
 {% include 'set_locale.sh' %}

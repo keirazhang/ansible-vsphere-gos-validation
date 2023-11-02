@@ -6,11 +6,11 @@ env | sort
 ip_addr=$(ip -o -f inet addr show | grep -v 127.0.0.1 | awk '{print $4}')
 echo "DHCP IPv4 address at pre-install: $ip_addr"
 
-echo "Boot command:"
+echo "Get boot command:"
 cat /proc/cmdline
 
-echo "Devices list:"
+echo "Get devices list:"
 lsblk
 
-echo "dmesg output:"
-dmesg --color=never
+echo "Get dmesg output at pre-install:"
+dmesg -c --color=never
