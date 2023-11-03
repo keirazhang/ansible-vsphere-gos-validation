@@ -11,7 +11,7 @@ echo "OS release information:"
 OS_NAME=$NAME
 OS_ID=$ID
 echo "OS name is $OS_NAME, release version is $VERSION_ID"
-if [ "X$VERSION_CODENAME " != "X" ]; then
+if [ "X$VERSION_CODENAME" != "X" ]; then
     echo "OS codename is $VERSION_CODENAME"
 fi
 

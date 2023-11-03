@@ -72,8 +72,7 @@ ubiquity ubiquity/success_command \
     cp -a /cdrom/preseed/{{ post_install_script_file }} /target/root/{{ post_install_script_file }}; \
     in-target /bin/bash /root/{{ post_install_script_file }}; \
     echo "Dump installer log:" >/dev/ttyS0; \
-    cat /var/log/syslog >/dev/ttyS0; \
-    echo "{{ autoinstall_complete_msg }}" >/dev/ttyS0;
+    cat /var/log/syslog >/dev/ttyS0;
 
 d-i finish-install/reboot_in_progress note
 d-i cdrom-detect/eject boolean true

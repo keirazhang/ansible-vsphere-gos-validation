@@ -44,3 +44,7 @@
         dest_file: "isolinux/isolinux.cfg"
       - src_file: "{{ new_unattend_install_conf }}"
         dest_file: "isolinux/{{ unattend_install_file_name }}"
+      - src_file: "{{ pre_install_script_path }}"
+        dest_file: "{{ pre_install_script_file }}"
+      - src_file: "{{ post_install_script_path }}"
+        dest_file: "{{ post_install_script_file }}"

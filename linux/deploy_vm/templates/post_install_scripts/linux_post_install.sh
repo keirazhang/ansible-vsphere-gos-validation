@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "Executing post-install script"
 # Get OS information
 {% include 'get_os_info.sh' %}
 
@@ -10,6 +11,10 @@
 
 {% include 'set_locale.sh' %}
 
+{% if unattend_installer == "Photon" %}
+{% include 'disable_firewall.sh' %}
+{% endif %}
+
 {% include 'config_ssh.sh' %}
 
 {% include 'enable_auto_login.sh' %}
@@ -17,3 +22,5 @@
 {% include 'disable_greeter.sh' %}
 
 {% include 'disable_screen_saver.sh' %}
+
+echo '{{ autoinstall_complete_msg }}'

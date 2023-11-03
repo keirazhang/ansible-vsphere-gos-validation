@@ -11,6 +11,7 @@
   ansible.builtin.set_fact:
     autoinstall_start_msg: "Autoinstall is started"
     pre_install_script_file: "linux_pre_install.sh"
+    post_install_start_msg: "Executing post-install script"
     post_install_script_file: "linux_post_install.sh"
     pre_install_script_path: ""
     post_install_script_path: ""

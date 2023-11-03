@@ -1,5 +1,10 @@
 # Add new user to sudoers list
 {% if new_user is defined and new_user != 'root' %}
+{% if unattend_installer == 'Photon' %}
+# Add new user for Photon OS
+echo "Add new user {{ new_user }}"
+useradd -p '{{ vm_password_hash }}' -m {{ new_user }}
+{% endif %}
 echo "Add new user {{ new_user }} to sudoers"
 echo '{{ new_user }} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/{{ new_user }}
 {% endif %}
