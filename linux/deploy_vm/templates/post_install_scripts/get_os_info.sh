@@ -8,6 +8,16 @@ echo "System environment variables:"
 env | sort
 
 # Get IPv4 address
+if [ "$OS_NAME" == "Debian GNU/Linux" ]; then
+    echo "Display content of /etc/network/interfaces"
+    cat /etc/network/interfaces
+
+    echo "Display network connections"
+    nmcli -f NAME,UUID,TYPE,ACTIVE,FILENAME connection show
+    echo "Get NetworkManager status"
+    systemctl status NetworkManager
+fi
+
 ip_addr=$(ip -o -f inet addr show | grep -v 127.0.0.1 | awk '{print $4}')
 if [ "X$ip_addr" == "X" ]; then
     ip_link_name=$(ip -o -f inet addr show | grep -v 127.0.0.1 | awk '{print $2}')
