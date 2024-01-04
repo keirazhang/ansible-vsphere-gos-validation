@@ -64,6 +64,15 @@
             - fail_message
           when: text_in_screenshot | length > 0
 
+    - name: "Collect dmesg output for Linux"
+      include_tasks: ../linux/utils/collect_dmesg.yml
+      vars:
+        dmesg_file_name: "dmesg_at_test_failure.txt"
+        dmesg_error_check: true
+      when:
+        - gosv_test_suite == 'linux'
+        - collect_dmesg | default(false)
+
     - name: "Download VM's vmware.log"
       include_tasks: esxi_download_datastore_file.yml
       vars:

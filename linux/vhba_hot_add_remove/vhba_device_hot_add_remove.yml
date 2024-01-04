@@ -96,7 +96,7 @@
       include_tasks: ../utils/collect_dmesg.yml
       vars:
         dmesg_opts: "-c"
-        dmesg_output_file_src: "/tmp/dmesg_before_vhba_test.txt"
+        dmesg_file_name: "dmesg_before_vhba_test.txt"
 
     - name: "Clear /var/log/messages"
       ansible.builtin.shell: "cat /dev/null >/var/log/messages"
@@ -153,11 +153,6 @@
           VM disk controllers before hot-add are {{ disk_controllers_before_hotadd }},
           VM disk controllers after hot-remove are {{ disk_controllers_after_hotremove }}.
   rescue:
-    - name: "Collect dmesg at test case failure"
-      include_tasks: ../utils/collect_dmesg.yml
-      vars:
-        dmesg_output_file_src: "/tmp/dmesg_at_test_failure.txt"
-
     - name: "Collect /var/log/messages at test case failure"
       include_tasks: ../utils/fetch_file.yml
       vars:
@@ -171,3 +166,5 @@
 
     - name: "Test case failure"
       include_tasks: ../../common/test_rescue.yml
+      vars:
+        collect_dmesg: true

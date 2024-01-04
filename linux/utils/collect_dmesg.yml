@@ -4,25 +4,50 @@
 # Description:
 #   Collect dmesg and save output to a local file
 # Parameters:
-#   dmesg_opts: The dmesg command options
-#   dmesg_output_file_src: Save dmesg output file on guest OS
+#   dmesg_opts: The dmesg command options. Default is empty.
+#   dmesg_file_name: The file name saved dmesg output. Default is 'dmesg.txt'.
+#   dmesg_error_check: True to check calltrace or errors in dmesg output. Default is false.
 # Return:
-#   dmesg_output_file_local: The dmesg output file at localhost
+#   dmesg_file_path: The file path saved dmesg output at localhost
 #
-- name: "Print dmesg ring buffer to {{ dmesg_output_file_src }}"
-  ansible.builtin.shell: "dmesg {{ dmesg_opts | default('') }} >{{ dmesg_output_file_src }}"
-  changed_when: false
-  delegate_to: "{{ vm_guest_ip }}"
-
-- name: "Fetch dmesg output to test case log folder"
-  include_tasks: fetch_file.yml
-  vars:
-    fetch_file_src_path: "{{ dmesg_output_file_src }}"
-    fetch_file_dst_path: "{{ current_test_log_folder }}/"
-
-- name: "Set facts of dmesg output file at localhost"
+- name: "Initialize the fact of dmesg output and file path at localhost"
   ansible.builtin.set_fact:
-    dmesg_output_file_local: "{{ fetch_file_local_path }}"
+    dmesg_output: ""
+    dmesg_file_path: "{{ current_test_log_folder }}/{{ dmesg_file_name | default('dmesg.txt') }}"
+
+- name: "Print dmesg ring buffer"
+  ansible.builtin.shell: "dmesg {{ dmesg_opts | default('') }}"
+  changed_when: false
+  ignore_errors: "{{ dmesg_error_check | default(false) }}"
+  delegate_to: "{{ vm_guest_ip }}"
+  no_log: true
+  register: dmesg_result
+
+- name: "Collect dmesg output to local"
   when:
-    - fetch_file_local_path is defined
-    - fetch_file_local_path
+    - dmesg_result.stdout_lines is defined
+    - dmesg_result.stdout_lines | length > 0
+  block:
+    - name: "Set fact of dmest output"
+      ansible.builtin.set_fact:
+        dmesg_output: "{{ dmesg_result.stdout_lines }}"
+
+    - name: "Save dmesg output to loal file"
+      ansible.builtin.copy:
+        dest: "{{ dmesg_file_path }}"
+        content: "{{ dmesg_output }}"
+
+    - name: "Check whether there is calltrace or errors in dmesg output"
+      when: dmesg_error_check | default(false)
+      block:
+        - name: "Extract calltrace or errors from dmesg output"
+          include_tasks: extract_errors_from_log.yml
+          vars:
+            local_log_path: "{{ dmesg_file_path }}"
+
+        - name: "Display extracted calltrace or errors in dmesg output"
+          ansible.builtin.debug:
+            msg: "{{ errors_in_log }}"
+          tags:
+            - fail_message
+          when: errors_in_log | length > 0

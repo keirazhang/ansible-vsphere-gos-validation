@@ -47,6 +47,13 @@
   vars:
     vm_wait_connection_timeout: 60
 
+- name: "Get new messages in dmesg ring buffer after hot removing network adapter"
+  include_tasks: ../utils/collect_dmesg.yml
+  vars:
+    dmesg_opts: "-c"
+    dmesg_file_name: "dmesg_after_nic_hotremove.txt"
+    dmesg_error_check: true
+
 - name: "Get network adapter status after hot-remove"
   include_tasks: ../utils/get_network_adapters_status.yml
 

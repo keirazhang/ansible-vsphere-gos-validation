@@ -211,4 +211,7 @@
             - pvrdma_client_vm_name is defined
             - vm_name == pvrdma_client_vm_name
 
-        - include_tasks: ../../common/test_rescue.yml
+        - name: "Test case failure"
+          include_tasks: ../../common/test_rescue.yml
+          vars:
+            collect_dmesg: true
