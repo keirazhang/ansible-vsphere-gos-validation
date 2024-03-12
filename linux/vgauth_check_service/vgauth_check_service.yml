@@ -12,20 +12,20 @@
   tasks:
     - name: "Test case block"
       block:
-        - name: "Test setup"
-          include_tasks: ../setup/test_setup.yml
-          vars:
-            skip_test_no_vmtools: true
-
-        - name: "Skip this test case for {{ guest_os_ansible_distribution }}"
+        - name: "Skip this test case for {{ vm_guest_os_distribution }}"
           include_tasks: ../../common/skip_test_case.yml
           vars:
-            skip_msg: "{{ guest_os_ansible_distribution }} doesn't have VGAuth service"
+            skip_msg: "Skip testcase '{{ ansible_play_name }}' because {{ vm_guest_os_distribution }} doesn't have VGAuth service"
             skip_reason: "Not Supported"
           when: >-
             (guest_os_ansible_distribution == 'FreeBSD' or
              (guest_os_ansible_distribution == 'Flatcar' and
               guest_os_ansible_distribution_ver is version('3760.2.0', '<')))
+
+        - name: "Test setup"
+          include_tasks: ../setup/test_setup.yml
+          vars:
+            skip_test_no_vmtools: true
 
         - name: "Set facts of VGAuthService process and service"
           include_tasks: ../utils/set_vgauth_facts.yml

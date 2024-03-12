@@ -11,20 +11,20 @@
   tasks:
     - name: "Test case block"
       block:
-        - name: "Test setup"
-          include_tasks: ../setup/test_setup.yml
-          vars:
-            skip_test_no_vmtools: true
-
-        - name: "Skip testcase '{{ ansible_play_name }}' for FreeBSD"
+        - name: "Skip testcase '{{ ansible_play_name }}' for {{ vm_guest_os_distribution }}"
           include_tasks: ../../common/skip_test_case.yml
           vars:
-            skip_msg: "Skip testcase '{{ ansible_play_name }}', it is not supported by {{ guest_os_ansible_distribution }}"
+            skip_msg: "Skip testcase '{{ ansible_play_name }}' because it is not supported by {{ vm_guest_os_distribution }}"
             skip_reason: "Not Supported"
           when: >-
             (guest_os_ansible_distribution == 'FreeBSD' or
              (guest_os_ansible_distribution == 'Flatcar' and
               guest_os_ansible_distribution_ver is version('3760.2.0', '>=')))
+
+        - name: "Test setup"
+          include_tasks: ../setup/test_setup.yml
+          vars:
+            skip_test_no_vmtools: true
 
         # Take quiesce snapshot
         - name: "Set quiesce snapshot variables"

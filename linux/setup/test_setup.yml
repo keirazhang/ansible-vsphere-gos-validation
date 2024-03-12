@@ -8,15 +8,16 @@
 - name: "Set current test case index, name and log folder"
   include_tasks: ../../common/set_current_testcase_facts.yml
 
-- name: "Check base snapshot existence and/or revert to it"
-  include_tasks: ../../common/base_snapshot_check_revert.yml
-
-- name: "Check VM settings"
-  include_tasks: ../../common/check_vm_settings.yml
-  when: vm_settings_checked is undefined
-
-- name: "Get VM guest IP"
-  include_tasks: ../../common/update_inventory.yml
+- name: "Revert to base snapshot"
+  when:
+    - current_testcase_index is defined
+    - current_testcase_index | int > 1
+  block:
+    - name: "Check base snapshot existence and/or revert to it"
+      include_tasks: ../../common/base_snapshot_check_revert.yml
+    
+    - name: "Get VM guest IP"
+      include_tasks: ../../common/update_inventory.yml
 
 - name: "Print VM guest IP address"
   ansible.builtin.debug: var=vm_guest_ip
@@ -34,9 +35,9 @@
     - skip_test_no_vmtools
     - not (vmtools_is_running is defined and vmtools_is_running | bool)
 
-- name: "Get guest OS system info"
-  include_tasks: ../utils/get_linux_system_info.yml
-  when: guest_os_system_info_retrieved is undefined or not guest_os_system_info_retrieved
+#- name: "Get guest OS system info"
+#  include_tasks: ../utils/get_linux_system_info.yml
+#  when: guest_os_system_info_retrieved is undefined or not guest_os_system_info_retrieved
 
 - name: "Get VMware Tools version and build"
   include_tasks: ../utils/get_guest_ovt_version_build.yml
