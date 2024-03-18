@@ -1,0 +1,109 @@
+binaries:
+  - "/usr/local/bin/vmtoolsd"
+  - "/usr/local/bin/vmware-checkvm"
+  - "/usr/local/bin/vmware-hgfsclient"
+  - "/usr/local/bin/vmware-namespace-cmd"
+  - "/usr/local/bin/vmware-rpctool"
+  - "/usr/local/bin/vmware-toolbox-cmd"
+  - "/usr/local/bin/vmware-xferlogs"
+{% if guest_os_ansible_distribution != 'VMware Photon OS' %}
+  - "/usr/local/bin/vmware-user-suid-wrapper"
+{% endif %}
+{% if guest_os_ansible_system == 'FreeBSD' %}
+  - "/usr/local/bin/vm-support"
+  - "/usr/local/bin/vmhgfs-fuse"
+  - "/usr/local/bin/vmware-vmblock-fuse"
+{% else %}
+  - "/usr/bin/vm-support"
+  - "/usr/local/bin/VGAuthService"
+  - "/usr/local/bin/vmware-vgauth-smoketest"
+  - "/usr/local/bin/vmware-vgauth-cmd"
+  - "/usr/local/bin/vmware-alias-import"
+{% endif %}
+scripts:
+  - "/etc/vmware-tools/poweroff-vm-default"
+  - "/etc/vmware-tools/poweron-vm-default"
+  - "/etc/vmware-tools/resume-vm-default"
+  - "/etc/vmware-tools/scripts"
+  - "/etc/vmware-tools/statechange.subr"
+  - "/etc/vmware-tools/suspend-vm-default"
+  - "/etc/vmware-tools/tools.conf.example"
+  - "/etc/vmware-tools/scripts/vmware/network"
+{% if guest_os_ansible_system == 'Linux' %}
+  - "/etc/vmware-tools/vgauth"
+  - "/etc/vmware-tools/vgauth.conf"
+  - "/etc/vmware-tools/vgauth/schemas/xenc-schema.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/catalog.xml"
+  - "/etc/vmware-tools/vgauth/schemas/datatypes.dtd"
+  - "/etc/vmware-tools/vgauth/schemas/XMLSchema-instance.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/XMLSchema.dtd"
+  - "/etc/vmware-tools/vgauth/schemas/saml-schema-assertion-2.0.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/xmldsig-core-schema.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/XMLSchema.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/XMLSchema-hasFacetAndProperty.xsd"
+  - "/etc/vmware-tools/vgauth/schemas/xml.xsd"
+{% endif %}
+include:
+  - "/usr/local/include/vmGuestLib/vmSessionId.h"
+  - "/usr/local/include/vmGuestLib/vmGuestLib.h"
+  - "/usr/local/include/vmGuestLib/vm_basic_types.h"
+  - "/usr/local/include/vmGuestLib/includeCheck.h"
+{% if guest_os_ansible_system == 'Linux' %}
+  - "/usr/local/include/libDeployPkg/linuxDeployment.h"
+  - "/usr/local/include/libDeployPkg/log.h"
+  - "/usr/local/include/libDeployPkg/guestrpc.h"
+  - "/usr/local/include/libDeployPkg/deploypkg.h"
+  - "/usr/local/include/libDeployPkg/process.h"
+  - "/usr/local/include/libDeployPkg/imgcust-api.h"
+  - "/usr/local/include/libDeployPkg/guestcust-events.h"
+  - "/usr/local/include/libDeployPkg/vm_basic_types.h"
+  - "/usr/local/include/libDeployPkg/includeCheck.h"
+  - "/usr/local/include/libDeployPkg/deployPkgFormat.h"
+{% if guest_os_ansible_kernel is version('4.0.0', '<') %}
+  - "/usr/local/include/vmci_sockets.h"
+{% endif %}
+{% endif %}
+libraries:
+  - "/usr/local/lib/libguestlib.a"
+  - "/usr/local/lib/libguestlib.la"
+  - "/usr/local/lib/libguestlib.so.0.0.0"
+  - "/usr/local/lib/libhgfs.a"
+  - "/usr/local/lib/libhgfs.la"
+  - "/usr/local/lib/libhgfs.so.0.0.0"
+  - "/usr/local/lib/libvmtools.a"
+  - "/usr/local/lib/libvmtools.la"
+  - "/usr/local/lib/libvmtools.so.0.0.0"
+  - "/usr/local/lib/pkgconfig/vmguestlib.pc"
+{% if guest_os_ansible_system == 'Linux' %}
+  - "/usr/local/lib/libDeployPkg.a"
+  - "/usr/local/lib/libDeployPkg.la"
+  - "/usr/local/lib/libDeployPkg.so.0.0.0"
+  - "/usr/local/lib/libguestStoreClient.a"
+  - "/usr/local/lib/libguestStoreClient.la"
+  - "/usr/local/lib/libguestStoreClient.so.0.0.0"
+  - "/usr/local/lib/libvgauth.a"
+  - "/usr/local/lib/libvgauth.la"
+  - "/usr/local/lib/libvgauth.so.0.0.0"
+  - "/usr/local/lib/pkgconfig/libDeployPkg.pc"
+{% endif %}
+plugins:
+    - "/usr/local/lib/open-vm-tools/plugins/common/libvix.so"
+    - "/usr/local/lib/open-vm-tools/plugins/common/libvix.la"
+    - "/usr/local/lib/open-vm-tools/plugins/common/libhgfsServer.so"
+    - "/usr/local/lib/open-vm-tools/plugins/common/libhgfsServer.la"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libtimeSync.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libappInfo.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libgdp.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libpowerOps.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libvmbackup.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libresolutionKMS.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libguestStore.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libguestInfo.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libcomponentMgr.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libdeployPkgPlugin.so"
+{% if guest_os_ansible_system == 'Linux' %}
+vmusr_plugins:
+    - "/usr/local/lib/open-vm-tools/plugins/vmusr/libdesktopEvents.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmusr/libdndcp.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmusr/libresolutionSet.so"
+{% endif %}

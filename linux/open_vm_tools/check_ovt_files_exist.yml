@@ -1,0 +1,28 @@
+# Copyright 2024 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Check open-vm-tools binaries, libraries and plugins exist after installing from source
+#
+- name: "Get file stat information"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  ignore_errors: true
+  delegate_to: "{{ vm_guest_ip }}"
+  with_items: "{{ ovt_files }}"
+  register: ovt_files_stat_result
+
+- name: "Set facts of checking open-vm-tools files result, and missing files"
+  ansible.builtin.set_fact:
+    ovt_files_exist_result: "{{ _dict }}"
+    ovt_files_missing: "{{ _dict | dict2items | selectattr('value', 'equalto', false) | map(attribute='key') }}"
+  vars:
+    _dict: "{{ dict(_keys|zip(_values)) }}"
+    _keys: "{{ ovt_files_stat_result.results | map(attribute='item') }}"
+    _values: "{{ ovt_files_stat_result.results | map(attribute='stat') | map(attribute='exists') }}"
+
+- name: "Check required open-vm-tools files exist"
+  ansible.builtin.assert:
+    that:
+      - ovt_files_missing | length == 0
+    fail_msg: "Failed to install open-vm-tools files {{ ','.join(ovt_files_missing) }} from source."
+    success_msg: "All required open-vm-tools files exist after installing from source."

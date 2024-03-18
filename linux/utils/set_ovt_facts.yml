@@ -3,13 +3,14 @@
 ---
 # Set the fact of open-vm-tools packages, processes and services
 #
-- name: "Set fact of open-vm-tools service for {{ guest_os_ansible_distribution }}"
+- name: "Set fact of open-vm-tools service name for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
-    ovt_service: |-
+    ovt_service_name: |-
       {%- if guest_os_family == 'FreeBSD' -%}vmware-guestd
       {%- elif guest_os_family in ['Debian', 'Astra Linux (Orel)'] -%}open-vm-tools
       {%- else  -%}vmtoolsd
       {%- endif -%}
+    ovt_service_file: ""
 
 - name: "Set facts of open-vm-tools packages and processes for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
@@ -35,3 +36,21 @@
   when:
     - guest_os_with_gui is defined
     - guest_os_with_gui
+
+- name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
+  when: guest_os_ansible_system == 'Linux'
+  block:
+    - name: "Get open-vm-tools service properties for {{ guest_os_ansible_distribution }}"
+      include_tasks: get_systemd_unit_properties.yml
+      vars:
+        guest_systemd_unit: "{{ ovt_service_name }}"
+        guest_systemd_show_properties: "FragmentPath"
+
+    - name: "Set fact of open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
+      ansible.builtin.set_fact:
+        ovt_service_file: "{{ guest_systemd_unit_properties.FragmentPath | default('') }}"
+
+- name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
+  ansible.builtin.set_fact:
+    ovt_service_file: "/usr/local/etc/rc.d/vmware-guestd"
+  when: guest_os_ansible_system == 'FreeBSD'

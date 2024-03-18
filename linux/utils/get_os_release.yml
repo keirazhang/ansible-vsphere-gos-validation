@@ -7,7 +7,7 @@
   ansible.builtin.set_fact:
     guest_os_release_path: "/etc/os-release"
     guest_os_release_local_path: ""
-    guest_os_release: {}
+    guest_os_release: {"NAME": "", "ID": "", "VERSION": "", "VERSION_ID": "", "PRETTY_NAME": ""}
 
 - name: "Fetch {{ guest_os_release_path }} to localhost"
   include_tasks: fetch_file.yml
@@ -29,7 +29,7 @@
 
     - name: "Set fact of guest OS release info"
       ansible.builtin.set_fact:
-        guest_os_release: "{{ get_os_release_content.stdout | from_yaml }}"
+        guest_os_release: "{{ guest_os_release | combine(get_os_release_content.stdout | from_yaml) }}"
       when:
         - get_os_release_content.stdout is defined
         - get_os_release_content.stdout

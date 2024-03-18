@@ -14,12 +14,14 @@
         - name: "Test setup"
           include_tasks: ../setup/test_setup.yml
 
-        - name: "Skip test case when VMware Tools is not installed"
+        - name: "Skip test case when VMware Tools is not installed or installed from source"
           include_tasks: ../../common/skip_test_case.yml
           vars:
-            skip_msg: "Skip test case due to VMware tools installed: {{ vmtools_is_installed | default(false) }}"
+            skip_msg: >-
+              Skip test case due to VMware tools installed: {{ vmtools_is_installed | default(false) }},
+              install type is {{ vmtools_install_type | default('') }}
             skip_reason: "Not Applicable"
-          when: vmtools_is_installed is undefined or not vmtools_is_installed
+          when: not vmtools_is_installed or vmtools_install_type == 'source'
 
         - name: "Check VMware Tools status is running"
           include_tasks: check_vmtools_status.yml
@@ -79,6 +81,7 @@
               include_tasks: ../utils/get_systemd_unit_properties.yml
               vars:
                 guest_systemd_unit: "multi-user.target"
+                guest_systemd_show_properties: "DropInPaths,Upholds"
 
             - name: "Update the fact that open-vm-tools service is upheld"
               ansible.builtin.set_fact:
@@ -87,12 +90,12 @@
                 - guest_systemd_unit_properties.DropInPaths is defined
                 - guest_systemd_unit_properties.DropInPaths is search('open-vm-tools-sysext-upholds.conf')
                 - guest_systemd_unit_properties.Upholds is defined
-                - guest_systemd_unit_properties.Upholds is search(ovt_service ~ '.service')
+                - guest_systemd_unit_properties.Upholds is search(ovt_service_name ~ '.service')
 
-        - name: "Check state and status of open-vm-tools service {{ ovt_service }}"
+        - name: "Check state and status of open-vm-tools service {{ ovt_service_name }}"
           include_tasks: ../utils/check_service_status.yml
           vars:
-            service_name: "{{ ovt_service }}"
+            service_name: "{{ ovt_service_name }}"
             expected_service_state: "running"
             expected_service_status: "{{ 'enabled' if not ovt_service_is_upheld else '' }}"
       rescue:

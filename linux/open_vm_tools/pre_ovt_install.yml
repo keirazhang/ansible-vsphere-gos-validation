@@ -1,0 +1,121 @@
+# Copyright 2024 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+#
+- name: "Set update VMware Tools by default"
+  ansible.builtin.set_fact:
+    update_vmtools: true
+  when: not (update_vmtools | default(''))
+
+# VM has open-vm-tools installed and update_vmtools is set false
+- name: "Skip test case because update_vmtools is false"
+  include_tasks: ../../common/skip_test_case.yml
+  vars:
+    skip_msg: "Test case '{{ ansible_play_name }}' is skipped because update_vmtools is set to: {{ update_vmtools }}"
+    skip_reason: "Skipped"
+  when: not update_vmtools | bool
+
+- name: "Set fact of open-vm-tools install type"
+  ansible.builtin.set_fact:
+    ovt_install_type: |-
+      {%- if not (linux_ovt_repo_url | default('')) and (linux_ovt_tarball_url | default('')) -%}source
+      {%- else -%}package
+      {%- endif -%}
+
+- name: "Skip test case when open-vm-tools install type is not applicable"
+  include_tasks: ../../common/skip_test_case.yml
+  vars:
+    skip_msg: "Skip test case {{ ansible_play_name }} because install type {{ ovt_install_type }} is not applicable"
+    skip_reason: "Skipped"
+  when: >-
+    (ansible_play_name == 'ovt_verify_pkg_install' and ovt_install_type != 'package') or
+    (ansible_play_name == 'ovt_verify_src_install' and ovt_install_type != 'source')
+
+- name: "Test setup"
+  include_tasks: ../setup/test_setup.yml
+
+# Flatcar and RHCOS doesn't support to install open-vm-tools
+- name: "Skip test case for {{ guest_os_ansible_distribution }}"
+  include_tasks: ../../common/skip_test_case.yml
+  vars:
+    skip_msg: "Skip test case {{ ansible_play_name }} because {{ guest_os_ansible_distribution }} doesn't support installing open-vm-tools"
+    skip_reason: "Not Supported"
+  when: guest_os_ansible_distribution in ['Flatcar', 'RHCOS']
+
+- name: "Set facts of open-vm-tools packages, processes and service"
+  include_tasks: ../utils/set_ovt_facts.yml
+
+- name: "Set facts of VGAuthService process and service"
+  include_tasks: ../utils/set_vgauth_facts.yml
+
+- name: "Get OS commands to uninstall or install open-vm-tools"
+  include_tasks: get_install_uninstall_cmd.yml
+
+- name: "Fetch service files of open-vm-tools and VGAuthService to current test log folder"
+  when: ovt_install_type == "source"
+  block:
+    - name: "Fetch open-vm-tools service file"
+      include_tasks: ../utils/fetch_file.yml
+      vars:
+        fetch_file_src_path: "{{ ovt_service_file }}"
+        fetch_file_dst_path: "{{ current_test_log_folder }}/"
+
+    - name: "Set fact of local path to open-vm-tools service file"
+      ansible.builtin.set_fact:
+        ovt_service_file_local_path: "{{ fetch_file_local_path }}"
+
+    - name: "Get VGAuthService service file"
+      when: vgauth_service_file
+      block:
+        - name: "Fetch VGAuthService service file"
+          include_tasks: ../utils/fetch_file.yml
+          vars:
+            fetch_file_src_path: "{{ vgauth_service_file }}"
+            fetch_file_dst_path: "{{ current_test_log_folder }}/"
+
+        - name: "Set fact of local path to VGAuthService service file"
+          ansible.builtin.set_fact:
+            vgauth_service_file_local_path: "{{ fetch_file_local_path }}"
+
+- name: "Uninstall open-vm-tools for reinstall"
+  include_tasks: uninstall_ovt.yml
+  when:
+    - vmtools_is_installed is defined
+    - vmtools_is_installed
+
+#- name: "Add package repositories for {{ guest_os_ansible_distribution }}"
+#  include_tasks: set_guest_os_repos.yml
+
+# Always add online package repositories for CentOS/VMware Photon OS/Debian
+- name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
+  include_tasks: ../utils/add_official_online_repo.yml
+  when: guest_os_ansible_distribution in ['CentOS', 'VMware Photon OS', 'Debian']
+
+# Add local DVD repository or online repository for installing OS bundled open-vm-tools
+# or building open-vm-tools source tarball
+- name: "Add package repositories for {{ guest_os_ansible_distribution }}"
+  when: >-
+    ovt_install_type == "source" or
+    (linux_ovt_repo_url is undefined or not linux_ovt_repo_url)
+  block:
+    - name: "Add a local package repository from ISO image for {{ guest_os_ansible_distribution }}"
+      include_tasks: ../utils/add_local_dvd_repo.yml
+      when: guest_os_ansible_distribution in ['SLES', 'SLED', 'RedHat', 'Rocky', 'AlmaLinux']
+
+    - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
+      include_tasks: ../utils/add_official_online_repo.yml
+      when: guest_os_ansible_distribution in ['OracleLinux', 'Ubuntu']
+
+# Add an extra online repository for install not-bundled open-vm-tools
+- name: "Add an extra open-vm-tools repository from URL"
+  include_tasks: ../utils/add_extra_online_repo.yml
+  vars:
+    extra_repo_name: "open-vm-tools-repo"
+    extra_repo_baseurl: "{{ linux_ovt_repo_url }}"
+  when:
+    - ovt_install_type == "package"
+    - linux_ovt_repo_url is defined
+    - linux_ovt_repo_url
+
+- name: "Update package metadata"
+  include_tasks: ../utils/repo_update.yml

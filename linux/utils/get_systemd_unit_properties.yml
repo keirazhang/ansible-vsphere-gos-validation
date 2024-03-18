@@ -4,24 +4,30 @@
 # Get systemd unit properties
 # Parameter:
 #   guest_systemd_unit: the systemd unit name
+#   guest_systemd_show_properties (optional): systemd unit properties to get, separated by coma.
 # Return:
 #   guest_systemd_unit_properties: systemd unit properties
 #
-- name: "Initialize the fact of systemd unit's properties"
+- name: "Initialize facts of systemd unit's properties"
   ansible.builtin.set_fact:
     guest_systemd_unit_properties: {}
 
 - name: "Get properties of systemd unit '{{ guest_systemd_unit }}'"
-  ansible.builtin.shell: "systemctl show {{ guest_systemd_unit }}"
+  ansible.builtin.shell: "systemctl show {{ options }} {{ guest_systemd_unit }}"
+  vars:
+    options: "{{ '-p ' ~ guest_systemd_show_properties if guest_systemd_show_properties | default('') else '--all' }}"
   ignore_errors: true
   delegate_to: "{{ vm_guest_ip }}"
   register: systemctl_show_result
 
 - name: "Set fact of systemd unit's properties"
   ansible.builtin.set_fact:
-    guest_systemd_unit_properties: "{{ systemctl_show_result.stdout | replace('=', ': ') | from_yaml }}"
+    guest_systemd_unit_properties: "{{ dict(_keys|zip(_vals)) }}"
+  vars:
+    _keys: "{{ systemctl_show_result.stdout_lines | map('regex_replace', '^(.*?)=(.*)$', '\\1')| map('trim') | list }}"
+    _vals: "{{ systemctl_show_result.stdout_lines | map('regex_replace', '^(.*?)=(.*)$', '\\2')| map('trim') | list }}"
   when:
     - systemctl_show_result.failed is defined
     - not systemctl_show_result.failed
-    - systemctl_show_result.stdout is defined
-    - systemctl_show_result.stdout
+    - systemctl_show_result.stdout_lines is defined
+    - systemctl_show_result.stdout_lines | length > 0

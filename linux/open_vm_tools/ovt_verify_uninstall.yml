@@ -31,6 +31,9 @@
           when: vmtools_is_installed is undefined or not (vmtools_is_installed | bool)
 
         - name: "Uninstall open-vm-tools"
+          when:
+            - vmtools_is_installed is defined
+            - vmtools_is_installed | bool
           block:
             - name: "Set facts of open-vm-tools packages, processes and service"
               include_tasks: ../utils/set_ovt_facts.yml
@@ -38,11 +41,11 @@
             - name: "Set facts of VGAuthService process and service"
               include_tasks: ../utils/set_vgauth_facts.yml
 
+            # Get OS commands to uninstall or install open-vm-tools
+            - include_tasks: get_install_uninstall_cmd.yml
+
             - name: "Uninstall open-vm-tools and check result"
               include_tasks: uninstall_ovt.yml
-          when:
-            - vmtools_is_installed is defined
-            - vmtools_is_installed | bool
       rescue:
         - name: "Test case failure"
           include_tasks: ../../common/test_rescue.yml
