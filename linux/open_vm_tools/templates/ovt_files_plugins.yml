@@ -1,4 +1,5 @@
 binaries:
+  - "/usr/bin/vm-support"
   - "/usr/local/bin/vmtoolsd"
   - "/usr/local/bin/vmware-checkvm"
   - "/usr/local/bin/vmware-hgfsclient"
@@ -6,15 +7,13 @@ binaries:
   - "/usr/local/bin/vmware-rpctool"
   - "/usr/local/bin/vmware-toolbox-cmd"
   - "/usr/local/bin/vmware-xferlogs"
-{% if guest_os_ansible_distribution != 'VMware Photon OS' %}
+{% if guest_os_ansible_distribution not in ['VMware Photon OS', 'FreeBSD'] %}
   - "/usr/local/bin/vmware-user-suid-wrapper"
 {% endif %}
-{% if guest_os_ansible_system == 'FreeBSD' %}
-  - "/usr/local/bin/vm-support"
+{% if guest_os_family == 'FreeBSD' %}
   - "/usr/local/bin/vmhgfs-fuse"
   - "/usr/local/bin/vmware-vmblock-fuse"
 {% else %}
-  - "/usr/bin/vm-support"
   - "/usr/local/bin/VGAuthService"
   - "/usr/local/bin/vmware-vgauth-smoketest"
   - "/usr/local/bin/vmware-vgauth-cmd"
@@ -29,7 +28,7 @@ scripts:
   - "/etc/vmware-tools/suspend-vm-default"
   - "/etc/vmware-tools/tools.conf.example"
   - "/etc/vmware-tools/scripts/vmware/network"
-{% if guest_os_ansible_system == 'Linux' %}
+{% if guest_os_family != 'FreeBSD' %}
   - "/etc/vmware-tools/vgauth"
   - "/etc/vmware-tools/vgauth.conf"
   - "/etc/vmware-tools/vgauth/schemas/xenc-schema.xsd"
@@ -42,13 +41,16 @@ scripts:
   - "/etc/vmware-tools/vgauth/schemas/XMLSchema.xsd"
   - "/etc/vmware-tools/vgauth/schemas/XMLSchema-hasFacetAndProperty.xsd"
   - "/etc/vmware-tools/vgauth/schemas/xml.xsd"
+  - "/etc/pam.d/vmtoolsd"
+{% else %}
+  - "/usr/local/etc/pam.d/vmtoolsd"
 {% endif %}
 include:
   - "/usr/local/include/vmGuestLib/vmSessionId.h"
   - "/usr/local/include/vmGuestLib/vmGuestLib.h"
   - "/usr/local/include/vmGuestLib/vm_basic_types.h"
   - "/usr/local/include/vmGuestLib/includeCheck.h"
-{% if guest_os_ansible_system == 'Linux' %}
+{% if guest_os_family != 'FreeBSD' %}
   - "/usr/local/include/libDeployPkg/linuxDeployment.h"
   - "/usr/local/include/libDeployPkg/log.h"
   - "/usr/local/include/libDeployPkg/guestrpc.h"
@@ -74,7 +76,7 @@ libraries:
   - "/usr/local/lib/libvmtools.la"
   - "/usr/local/lib/libvmtools.so.0.0.0"
   - "/usr/local/lib/pkgconfig/vmguestlib.pc"
-{% if guest_os_ansible_system == 'Linux' %}
+{% if guest_os_family != 'FreeBSD' %}
   - "/usr/local/lib/libDeployPkg.a"
   - "/usr/local/lib/libDeployPkg.la"
   - "/usr/local/lib/libDeployPkg.so.0.0.0"
@@ -92,16 +94,16 @@ plugins:
     - "/usr/local/lib/open-vm-tools/plugins/common/libhgfsServer.so"
     - "/usr/local/lib/open-vm-tools/plugins/common/libhgfsServer.la"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libtimeSync.so"
-    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libappInfo.so"
-    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libgdp.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libpowerOps.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libvmbackup.so"
-    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libresolutionKMS.so"
-    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libguestStore.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libguestInfo.so"
+{% if guest_os_family != 'FreeBSD' %}
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libappInfo.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libgdp.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libguestStore.so"
+    - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libresolutionKMS.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libcomponentMgr.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmsvc/libdeployPkgPlugin.so"
-{% if guest_os_ansible_system == 'Linux' %}
 vmusr_plugins:
     - "/usr/local/lib/open-vm-tools/plugins/vmusr/libdesktopEvents.so"
     - "/usr/local/lib/open-vm-tools/plugins/vmusr/libdndcp.so"

@@ -24,6 +24,8 @@ dependencies:
   - libgtkmm-3.0-dev
 {% elif guest_os_ansible_distribution == 'FreeBSD' %}
 dependencies:
+  - gzip
+  - gtar
   - gcc
   - autotools
   - libtool

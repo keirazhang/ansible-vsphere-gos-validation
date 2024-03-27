@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: BSD-2-Clause
 ---
 # Description:
-#   This test case is used for check 'VGAuth' service status in guest OS.
-# If VMware Tools is not installed or not running, then this test case
-# result will be "Blocked".
+#   This test case is used for check 'VGAuthService' service status in guest OS.
+# If VMware Tools is not installed or not running, then this test case result
+# will be "Blocked".
 #
 - name: vgauth_check_service
   hosts: localhost
@@ -26,6 +26,13 @@
             (guest_os_ansible_distribution == 'FreeBSD' or
              (guest_os_ansible_distribution == 'Flatcar' and
               guest_os_ansible_distribution_ver is version('3760.2.0', '<')))
+
+        - name: "Skip test case when open-vm-tools is installed from source"
+          include_tasks: ../../common/skip_test_case.yml
+          vars:
+            skip_msg: "Skip test case due to open-vm-tools install type is {{ vmtools_install_type | default('') }}"
+            skip_reason: "Not Applicable"
+          when: vmtools_install_type == 'source'
 
         - name: "Set facts of VGAuthService process and service"
           include_tasks: ../utils/set_vgauth_facts.yml

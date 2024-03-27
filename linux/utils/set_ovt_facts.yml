@@ -37,8 +37,9 @@
     - guest_os_with_gui is defined
     - guest_os_with_gui
 
+# Set open-vm-tools service file for Linux
 - name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
-  when: guest_os_ansible_system == 'Linux'
+  when: guest_os_family != 'FreeBSD'
   block:
     - name: "Get open-vm-tools service properties for {{ guest_os_ansible_distribution }}"
       include_tasks: get_systemd_unit_properties.yml
@@ -50,7 +51,8 @@
       ansible.builtin.set_fact:
         ovt_service_file: "{{ guest_systemd_unit_properties.FragmentPath | default('') }}"
 
+# Set open-vm-tools service file for FreeBSD
 - name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
     ovt_service_file: "/usr/local/etc/rc.d/vmware-guestd"
-  when: guest_os_ansible_system == 'FreeBSD'
+  when: guest_os_family == 'FreeBSD'

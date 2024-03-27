@@ -16,10 +16,11 @@
   vars:
     vm_wait_vmtools_running: true
 
+# Post-reboot check open-vm-tools plugins and inbox drivers for Linux system
 - name: "Check open-vm-tools plugins and guest OS inbox drivers after reboot"
   when:
-    - guest_os_ansible_system == 'Linux'
     - ovt_install_type == 'source'
+    - guest_os_family != 'FreeBSD'
   block:
     - name: "Check plugins are loaded after reboot"
       include_tasks: check_ovt_plugins_loaded.yml

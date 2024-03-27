@@ -9,11 +9,9 @@
   ignore_errors: true
   delegate_to: "{{ vm_guest_ip }}"
 
-- debug:
-    msg: "{{ (ovt_plugins.common + ovt_plugins.vmsvc) | select('match', '.*.so') }}"
 - name: "Set fact of not loaded open-vm-tools plugins"
   ansible.builtin.set_fact:
-    ovt_plugins_unloaded: "{{ (ovt_plugins.common + ovt_plugins.vmsvc) | select('match', '.*.so') |
+    ovt_plugins_unloaded: "{{ ovt_plugins | select('match', '.*.so') |
                               difference(ovt_plugins_load_result.stdout_lines | unique) }}"
 
 - name: "Check required open-vm-tools files existing and plugins loaded"

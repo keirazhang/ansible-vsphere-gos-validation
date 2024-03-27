@@ -3,13 +3,12 @@
 ---
 # Set facts of VGAuthService config file, log file, process, service name and file
 #
-- name: "Initialize facts of VGAuthService process, config file and default latest log file"
+- name: "Set facts of VGAuthService process, config file and default latest log file"
   ansible.builtin.set_fact:
-    vgauth_service_name: ""
-    vgauth_service_file: ""
     vgauth_process: {"uid": "root", "cmd": "VGAuthService"}
     vgauth_config_file: "/etc/vmware-tools/vgauth.conf"
     vgauth_latest_log_file: "/var/log/vmware-vgauthsvc.log.0"
+  when: guest_os_family != 'FreeBSD'
 
 - name: "Set the fact of VGAuthService service name and file for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
@@ -17,7 +16,7 @@
     vgauth_service_file: "/lib/systemd/system/vgauthd.service"
   when: guest_os_family not in ["Debian", "Astra Linux (Orel)", 'FreeBSD']
 
-- name: "Set the fact of VGAuthService service name for {{ guest_os_ansible_distribution }}"
+- name: "Set the fact of VGAuthService service name and file for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
     vgauth_service_name: "vgauth"
     vgauth_service_file: "/lib/systemd/system/vgauth.service"

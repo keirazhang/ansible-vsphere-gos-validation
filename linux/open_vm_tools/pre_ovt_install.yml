@@ -65,7 +65,7 @@
         ovt_service_file_local_path: "{{ fetch_file_local_path }}"
 
     - name: "Get VGAuthService service file"
-      when: vgauth_service_file
+      when: guest_os_family != 'FreeBSD'
       block:
         - name: "Fetch VGAuthService service file"
           include_tasks: ../utils/fetch_file.yml
@@ -83,9 +83,6 @@
     - vmtools_is_installed is defined
     - vmtools_is_installed
 
-#- name: "Add package repositories for {{ guest_os_ansible_distribution }}"
-#  include_tasks: set_guest_os_repos.yml
-
 # Always add online package repositories for CentOS/VMware Photon OS/Debian
 - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
   include_tasks: ../utils/add_official_online_repo.yml
@@ -100,7 +97,7 @@
   block:
     - name: "Add a local package repository from ISO image for {{ guest_os_ansible_distribution }}"
       include_tasks: ../utils/add_local_dvd_repo.yml
-      when: guest_os_ansible_distribution in ['SLES', 'SLED', 'RedHat', 'Rocky', 'AlmaLinux']
+      when: guest_os_ansible_distribution in ['SLES', 'SLED', 'RedHat', 'Rocky', 'AlmaLinux', 'openSUSE Leap']
 
     - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
       include_tasks: ../utils/add_official_online_repo.yml

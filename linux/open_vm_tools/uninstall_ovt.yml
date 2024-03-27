@@ -46,17 +46,13 @@
   include_tasks: ../utils/check_process_status.yml
   vars:
     expected_process_state: "absent"
-    process_uid: "{{ ovt_process.uid }}"
-    process_name: "{{ ovt_process.cmd }}"
-  with_items: "{{ ovt_processes | union([vgauth_process]) }}"
-  loop_control:
-    loop_var: ovt_process
+    process_uid: "{{ item.uid }}"
+    process_name: "{{ item.cmd }}"
+  with_items: "{{ ovt_processes | union([vgauth_process | default('')]) | select }}"
 
 - name: "Check open-vm-tools services doesn't exist"
   include_tasks: ../utils/check_service_status.yml
   vars:
     service_name: "{{ item }}"
     expected_service_state: "absent"
-  with_items:
-    - "{{ ovt_service_name }}"
-    - "{{ vgauth_service_name }}"
+  with_items: "{{ ([ovt_service_name] + [vgauth_service_name | default('')]) | select }}"
