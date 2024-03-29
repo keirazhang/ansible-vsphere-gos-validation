@@ -1,58 +1,43 @@
 # Copyright 2021-2024 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 ---
-# Set the fact of open-vm-tools packages, processes and services
+# Set the fact of open-vm-tools service, packages, and processes
 #
-- name: "Set fact of open-vm-tools service name for {{ guest_os_ansible_distribution }}"
-  ansible.builtin.set_fact:
-    ovt_service_name: |-
-      {%- if guest_os_family == 'FreeBSD' -%}vmware-guestd
-      {%- elif guest_os_family in ['Debian', 'Astra Linux (Orel)'] -%}open-vm-tools
-      {%- else  -%}vmtoolsd
-      {%- endif -%}
-    ovt_service_file: ""
+- name: "Set facts of open-vm-tools service, packages, processes for Linux system"
+  when: guest_os_ansible_system == 'linux'
+  block:
+    - name: "Set facts of open-vm-tools service, packages and processes for {{ guest_os_ansible_distribution }}"
+      ansible.builtin.set_fact:
+        ovt_service_name: "{{ 'open-vm-tools' if guest_os_family in ['Debian', 'Astra Linux (Orel)']
+                               else 'vmtoolsd' }}"
+        ovt_packages: |-
+          {%- if guest_os_family == "Suse" -%}["open-vm-tools", "libvmtools0"]
+          {%- else -%}["open-vm-tools"]
+          {%- endif -%}
+        ovt_processes: [{"uid": "root", "cmd":"vmtoolsd"}]
 
-- name: "Set facts of open-vm-tools packages and processes for {{ guest_os_ansible_distribution }}"
-  ansible.builtin.set_fact:
-    ovt_packages: |-
-      {%- if guest_os_family == 'FreeBSD' -%}["open-vm-tools-nox11"]
-      {%- elif guest_os_family == "Suse" -%}["open-vm-tools", "libvmtools0"]
-      {%- else -%}["open-vm-tools"]
-      {%- endif -%}
-    ovt_processes:
-      - {"uid": "root", "cmd":"vmtoolsd"}
-  when: guest_os_with_gui is undefined or not guest_os_with_gui
+    - name: "Set fact of open-vm-tools service file for {{ guest_os_ansible_distribution }}"
+      ansible.builtin.set_fact:
+        ovt_service_file: "/lib/systemd/system/{{ ovt_service_name }}.service"
 
-- name: "Set facts of open-vm-tools packages and processes for {{ guest_os_ansible_distribution }}"
+    - name: "Add open-vm-tools-desktop packages for desktop environment"
+      ansible.builtin.set_fact:
+        ovt_packages: "{{ ovt_packages | union(['open-vm-tools-desktop']) }}"
+      when:
+        - guest_os_with_gui is defined
+        - guest_os_with_gui
+
+- name: "Set facts of open-vm-tools service, packages, and processes for {{ guest_os_ansible_distribution }}"
   ansible.builtin.set_fact:
-    ovt_packages: |-
-      {%- if guest_os_family == 'FreeBSD' -%}["open-vm-tools"]
-      {%- elif guest_os_family == "Suse" -%}["open-vm-tools", "open-vm-tools-desktop", "libvmtools0"]
-      {%- else -%}["open-vm-tools", "open-vm-tools-desktop"]
-      {%- endif -%}
-    ovt_processes:
-      - {"uid": "root", "cmd":"vmtoolsd"}
-      - {'uid':'vmware', 'cmd':'vmtoolsd -n vmusr'}
+    ovt_service_name: "vmware-guestd"
+    ovt_service_file: "/usr/local/etc/rc.d/vmware-guestd"
+    ovt_packages: "{{ 'open-vm-tools' if guest_os_with_gui | default(false) else 'open-vm-tools-nox11' }}"
+    ovt_processes: [{"uid": "root", "cmd":"vmtoolsd"}]
+  when: guest_os_ansible_system == 'freebsd'
+
+- name: "Add open-vm-tools user process for desktop environment"
+  ansible.builtin.set_fact:
+    ovt_processes: "{{ ovt_processes | union([{'uid':'vmware', 'cmd':'vmtoolsd -n vmusr'}]) }}"
   when:
     - guest_os_with_gui is defined
     - guest_os_with_gui
-
-# Set open-vm-tools service file for Linux
-- name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
-  when: guest_os_family != 'FreeBSD'
-  block:
-    - name: "Get open-vm-tools service properties for {{ guest_os_ansible_distribution }}"
-      include_tasks: get_systemd_unit_properties.yml
-      vars:
-        guest_systemd_unit: "{{ ovt_service_name }}"
-        guest_systemd_show_properties: "FragmentPath"
-
-    - name: "Set fact of open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
-      ansible.builtin.set_fact:
-        ovt_service_file: "{{ guest_systemd_unit_properties.FragmentPath | default('') }}"
-
-# Set open-vm-tools service file for FreeBSD
-- name: "Get open-vm-tools service file path for {{ guest_os_ansible_distribution }}"
-  ansible.builtin.set_fact:
-    ovt_service_file: "/usr/local/etc/rc.d/vmware-guestd"
-  when: guest_os_family == 'FreeBSD'

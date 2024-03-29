@@ -3,19 +3,19 @@
 ---
 # Install open-vm-tools by building source tarball
 #
-- name: "Create config files for installing open-vm-tools from source"
+- name: "Create files for installing open-vm-tools from source"
   ansible.builtin.template:
     src: "templates/{{ item }}"
     dest: "{{ current_test_log_folder }}/{{ item }}"
     mode: "0755"
   with_items:
-    - "ovt_build_config.yml"
-    - "ovt_files_plugins.yml"
+    - "{{ guest_os_ansible_system }}_ovt_build_config.yml"
+    - "{{ guest_os_ansible_system }}_ovt_files_plugins.yml"
 
-- name: "Set facts of open-vm-tools build config, and binaries, libraries and plugins to be installed"
+- name: "Set facts of open-vm-tools build config, files and plugins to be installed"
   ansible.builtin.set_fact:
     ovt_dependencies: "{{ _ovt_build_config.dependencies }}"
-    ovt_configure_options: "{{ _ovt_build_config.configure_options | default('') }}"
+    ovt_configure_options: "{{ _ovt_build_config.configure_options | default([]) }}"
     ovt_files: "{{ (_ovt_installed_files | dict2items | map(attribute='value') | flatten) }}"
     ovt_plugins: "{{ _ovt_installed_files.plugins }}"
     ovt_vmusr_plugins: "{{ _ovt_installed_files.vmusr_plugins | default([]) }}"
@@ -30,8 +30,11 @@
       - ovt_files | length > 0
       - ovt_plugins | length > 0
     fail_msg: >-
-      Not found configs for open-vm-tools dependencies, files or plugins for
+      Not found configs for open-vm-tools dependencies, files or plugins when installing from source on
       {{ guest_os_ansible_distribution }} {{ guest_os_ansible_distribution_ver }}
+
+- name: "Display dependencies to be installed for building open-vm-tools"
+  ansible.builtin.debug: var=ovt_dependencies
 
 - name: "Install open-vm-tools build dependencies"
   include_tasks: ../utils/install_uninstall_package.yml
@@ -95,7 +98,7 @@
     if [ $? -ne 0 ]; then exit 201; fi;
 
     echo ">>>Executing configure" >>{{ guest_ovt_install_log }};
-    ./configure {{ ovt_configure_options }}>>{{ guest_ovt_install_log }};
+    ./configure {{ ' '.join(ovt_configure_options) }}>>{{ guest_ovt_install_log }};
     if [ $? -ne 0 ]; then exit 202; fi;
 
     echo ">>>Executing make" >>{{ guest_ovt_install_log }};
@@ -127,51 +130,3 @@
 - name: "Check open-vm-tools required files are installed"
   include_tasks: check_ovt_files_exist.yml
 
-- name: "Add service file for open-vm-tools"
-  ansible.builtin.copy:
-    src: "{{ ovt_service_file_local_path }}"
-    dest: "{{ ovt_service_file }}"
-    mode: "0644"
-  delegate_to: "{{ vm_guest_ip }}"
-
-- name: "Add VGAuthService service and update ExecStart in services files for Linux system"
-  when: guest_os_family != 'FreeBSD'
-  block:
-    - name: "Add service file for VGAuthService"
-      ansible.builtin.copy:
-        src: "{{ vgauth_service_file_local_path }}"
-        dest: "{{ vgauth_service_file }}"
-        mode: "0644"
-      delegate_to: "{{ vm_guest_ip }}"
-
-    - name: "Update ExecStart in service files for open-vm-tools and VGAuthService"
-      include_tasks: ../utils/replace_or_add_line_in_file.yml
-      vars:
-        file: "{{ item }}"
-        reg_exp: "(ExecStart=)/usr(.*)"
-        line_content: "\\1/usr/local\\2"
-        replace_with_backrefs: true
-      with_items:
-        - "{{ ovt_service_file }}"
-        - "{{ vgauth_service_file }}"
-
-    - name: "Reload systemd manager configuration"
-      ansible.builtin.shell: "systemctl daemon-reload"
-      delegate_to: "{{ vm_guest_ip }}"
-
-    - name: "Enable and start services for open-vm-tools and VGAuthService"
-      include_tasks: ../utils/service_operation.yml
-      vars:
-        service_name: "{{ item }}"
-        service_enabled: true
-        service_state: "started"
-      with_items:
-        - "{{ ovt_service_name }}"
-        - "{{ vgauth_service_name }}"
-
-- name: "Enable {{ ovt_service_name }} service for FreeBSD system"
-  include_tasks: replace_or_add_line_in_file.yml
-  vars:
-    file: "{{ ovt_service_file }}"
-    line_content: 'vmware_guestd_enable="YES"'
-  when: guest_os_family == 'FreeBSD'

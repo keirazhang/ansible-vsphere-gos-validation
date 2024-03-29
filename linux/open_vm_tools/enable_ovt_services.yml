@@ -1,0 +1,72 @@
+# Copyright 2024 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Add and enable services for open-vm-tools and VGAuthService 
+# so that they can be started automatically
+#
+- name: "Add service file for open-vm-tools"
+  ansible.builtin.template:
+    src: "templates/{{ guest_os_ansible_system }}_{{ ovt_service_name }}.service"
+    dest: "{{ ovt_service_file }}"
+    mode: "0755"
+  delegate_to: "{{ vm_guest_ip }}"
+
+- name: "Add service file for VGAuthService"
+  ansible.builtin.template:
+    src: "templates/{{ guest_os_ansible_system }}_{{ vgauth_service_name }}.service"
+    dest: "{{ vgauth_service_file }}"
+    mode: "0755"
+  delegate_to: "{{ vm_guest_ip }}"
+  when: guest_os_family != 'FreeBSD'
+
+- name: "Add service file for open-vm-tools"
+  ansible.builtin.copy:
+    src: "{{ ovt_service_file_local_path }}"
+    dest: "{{ ovt_service_file }}"
+    mode: "0755"
+  delegate_to: "{{ vm_guest_ip }}"
+
+- name: "Add VGAuthService service and update ExecStart in services files for Linux system"
+  when: guest_os_family != 'FreeBSD'
+  block:
+    - name: "Add service file for VGAuthService"
+      ansible.builtin.copy:
+        src: "{{ vgauth_service_file_local_path }}"
+        dest: "{{ vgauth_service_file }}"
+        mode: "0644"
+      delegate_to: "{{ vm_guest_ip }}"
+      when:
+        - vgauth_service_file_local_path is defined
+        - vgauth_service_file_local_path
+
+    - name: "Update ExecStart in service files for open-vm-tools and VGAuthService"
+      include_tasks: ../utils/replace_or_add_line_in_file.yml
+      vars:
+        file: "{{ item }}"
+        reg_exp: "(ExecStart=)/usr(.*)"
+        line_content: "\\1/usr/local\\2"
+        replace_with_backrefs: true
+      with_items:
+        - "{{ ovt_service_file }}"
+        - "{{ vgauth_service_file }}"
+
+    - name: "Reload systemd manager configuration"
+      ansible.builtin.shell: "systemctl daemon-reload"
+      delegate_to: "{{ vm_guest_ip }}"
+
+    - name: "Enable and start services for open-vm-tools and VGAuthService"
+      include_tasks: ../utils/service_operation.yml
+      vars:
+        service_name: "{{ item }}"
+        service_enabled: true
+        service_state: "started"
+      with_items:
+        - "{{ ovt_service_name }}"
+        - "{{ vgauth_service_name }}"
+
+- name: "Enable FreeBSD service {{ ovt_service_name }}"
+  include_tasks: ../utils/replace_or_add_line_in_file.yml
+  vars:
+    file: "/etc/rc.conf"
+    line_content: 'vmware_guestd_enable="YES"'
+  when: guest_os_family == 'FreeBSD'

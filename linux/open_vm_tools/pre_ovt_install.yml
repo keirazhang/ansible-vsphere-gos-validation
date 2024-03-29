@@ -42,6 +42,18 @@
     skip_reason: "Not Supported"
   when: guest_os_ansible_distribution in ['Flatcar', 'RHCOS']
 
+# If the existing open-vm-tools in guest OS was installed from source, it can't be uninstalled. Therefore,
+# it can't reinstall open-vm-tools. Then neither "ovt_verify_pkg_install" or "ovt_verify_src_install"
+# can be executed.
+- name: "Skip test case when current open-vm-tools install type is source"
+  include_tasks: ../../common/skip_test_case.yml
+  vars:
+    skip_msg: >-
+      Skip test case {{ ansible_play_name }} because current open-vm-tools install type is {{ ovt_install_type }},
+      which can't be uninstalled for reinstalling open-vm-tools.
+    skip_reason: "Not Applicable"
+  when: vmtools_install_type == 'source'
+
 - name: "Set facts of open-vm-tools packages, processes and service"
   include_tasks: ../utils/set_ovt_facts.yml
 
@@ -51,37 +63,41 @@
 - name: "Get OS commands to uninstall or install open-vm-tools"
   include_tasks: get_install_uninstall_cmd.yml
 
-- name: "Fetch service files of open-vm-tools and VGAuthService to current test log folder"
-  when: ovt_install_type == "source"
-  block:
-    - name: "Fetch open-vm-tools service file"
-      include_tasks: ../utils/fetch_file.yml
-      vars:
-        fetch_file_src_path: "{{ ovt_service_file }}"
-        fetch_file_dst_path: "{{ current_test_log_folder }}/"
-
-    - name: "Set fact of local path to open-vm-tools service file"
-      ansible.builtin.set_fact:
-        ovt_service_file_local_path: "{{ fetch_file_local_path }}"
-
-    - name: "Get VGAuthService service file"
-      when: guest_os_family != 'FreeBSD'
-      block:
-        - name: "Fetch VGAuthService service file"
-          include_tasks: ../utils/fetch_file.yml
-          vars:
-            fetch_file_src_path: "{{ vgauth_service_file }}"
-            fetch_file_dst_path: "{{ current_test_log_folder }}/"
-
-        - name: "Set fact of local path to VGAuthService service file"
-          ansible.builtin.set_fact:
-            vgauth_service_file_local_path: "{{ fetch_file_local_path }}"
-
 - name: "Uninstall open-vm-tools for reinstall"
-  include_tasks: uninstall_ovt.yml
   when:
     - vmtools_is_installed is defined
     - vmtools_is_installed
+    - vmtools_install_type == 'package'
+  block:
+    # Collect service files for open-vm-tools and VGAuthService installed by package
+    - name: "Fetch service files of open-vm-tools and VGAuthService to current test log folder"
+      when: ovt_install_type == "source"
+      block:
+        - name: "Fetch open-vm-tools service file"
+          include_tasks: ../utils/fetch_file.yml
+          vars:
+            fetch_file_src_path: "{{ ovt_service_file }}"
+            fetch_file_dst_path: "{{ current_test_log_folder }}/"
+    
+        - name: "Set fact of local path to open-vm-tools service file"
+          ansible.builtin.set_fact:
+            ovt_service_file_local_path: "{{ fetch_file_local_path }}"
+    
+        - name: "Get VGAuthService service file"
+          when: guest_os_family != 'FreeBSD'
+          block:
+            - name: "Fetch VGAuthService service file"
+              include_tasks: ../utils/fetch_file.yml
+              vars:
+                fetch_file_src_path: "{{ vgauth_service_file }}"
+                fetch_file_dst_path: "{{ current_test_log_folder }}/"
+    
+            - name: "Set fact of local path to VGAuthService service file"
+              ansible.builtin.set_fact:
+                vgauth_service_file_local_path: "{{ fetch_file_local_path }}"
+    
+    - name: "Uninstall open-vm-tools packages"
+      include_tasks: uninstall_ovt.yml
 
 # Always add online package repositories for CentOS/VMware Photon OS/Debian
 - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
