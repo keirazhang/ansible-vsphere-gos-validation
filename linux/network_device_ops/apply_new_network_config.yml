@@ -6,11 +6,16 @@
 #
 - name: "Get guest network device manager"
   include_tasks: ../utils/get_network_manager.yml
+  when: guest_os_network_manager is undefined
 
 - name: "Add network connection for {{ guest_os_ansible_distribution }}"
   when: guest_os_network_manager == "NetworkManager"
   block:
     - name: "Add network connection with static IP address"
+      when:
+        - new_nic_ipv4 is defined and new_nic_ipv4
+        - new_nic_net_prefix is defined and new_nic_net_prefix
+        - new_nic_gateway is defined and new_nic_gateway
       block:
         - name: "Add a network connection with static IP address for {{ new_network_adapter }}"
           ansible.builtin.shell: >-
@@ -25,12 +30,12 @@
         - name: "Set result of adding network connection with static IP address"
           ansible.builtin.set_fact:
             nm_add_connection: "{{ nm_add_static_conn }}"
-      when:
-        - new_nic_ipv4 is defined and new_nic_ipv4
-        - new_nic_net_prefix is defined and new_nic_net_prefix
-        - new_nic_gateway is defined and new_nic_gateway
 
     - name: "Add network connection with DHCP IP address"
+      when: >-
+        (new_nic_ipv4 is undefined or not new_nic_ipv4) or
+        (new_nic_net_prefix is undefined or not new_nic_net_prefix) or
+        (new_nic_gateway is undefined or not new_nic_gateway)
       block:
         - name: "Add a network connection with DHCP IP address for {{ new_network_adapter }}"
           ansible.builtin.shell: >-
@@ -43,10 +48,6 @@
         - name: "Set result of adding network connection with DHCP IP address"
           ansible.builtin.set_fact:
             nm_add_connection: "{{ nm_add_dhcp_conn }}"
-      when: >-
-        (new_nic_ipv4 is undefined or not new_nic_ipv4) or
-        (new_nic_net_prefix is undefined or not new_nic_net_prefix) or
-        (new_nic_gateway is undefined or not new_nic_gateway)
 
     - name: "Check network connection is added for {{ new_network_adapter }}"
       ansible.builtin.assert:
@@ -76,7 +77,10 @@
     - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
         network_config_template: rhel_network_conf.j2
-      when: guest_os_family == "RedHat"
+      when:
+        - guest_os_family == "RedHat"
+        - not (guest_os_ansible_distribution == 'Amazon' and
+               guest_os_ansible_distribution_major_ver | int >= 2023)
 
     - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
@@ -99,15 +103,13 @@
         network_config_template: sles_network_conf.j2
       when: guest_os_family == "Suse"
 
-    - name: "Set fact of the network config template for Flatcar"
+    - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
-        network_config_template: flatcar_network_conf.j2
-      when: guest_os_ansible_distribution == 'Flatcar'
-
-    - name: "Set fact of the network config template for FreeBSD"
-      ansible.builtin.set_fact:
-        network_config_template: freebsd_network_conf.j2
-      when: guest_os_family == "FreeBSD"
+        network_config_template: "{{ guest_os_ansible_distribution | lower }}_network_conf.j2"
+      when: >-
+        guest_os_ansible_distribution in ['Flatcar', 'FreeBSD'] or
+        (guest_os_ansible_distribution == 'Amazon' and
+         guest_os_ansible_distribution_major_ver | int >= 2023)
 
     - name: "Create or update network config file for new network interface"
       when:
@@ -130,26 +132,31 @@
         - name: "Print content of network config file '{{ network_config_path }}'"
           ansible.builtin.debug: var=network_config.stdout_lines
 
-- name: "Apply new netplan configuration file in Ubuntu server"
-  when:
-    - guest_os_ansible_distribution == "Ubuntu"
-    - guest_os_network_manager == "netplan"
+- name: "Reload network configurations on {{ vm_guest_os_distribution }}"
+  when: guest_os_network_manager in ["netplan", "systemd-networkd"]
   block:
-    # IP could be changed after netplan apply
-    - name: "Apply netplan configuration file for new added nic {{ new_network_adapter }} in Ubuntu"
-      ansible.builtin.command: "netplan apply"
+    - name: "Set fact of network reload command"
+      ansible.builtin.set_fact:
+        network_reload_cmd: |-
+          {%- if guest_os_network_manager == 'netplan' -%}netplan apply
+          {%- else -%}networkctl reload
+          {%- endif -%}
+
+    # IP could be changed after netplan apply or networkctl reload
+    - name: "Reload network configurations on {{ vm_guest_os_distribution }}"
+      ansible.builtin.command: "{{ network_reload_cmd }}"
       delegate_to: "{{ vm_guest_ip }}"
       async: 20
       poll: 0
       ignore_errors: true
-      register: netplan_apply
+      register: network_reload_result
 
-    - name: "Sleep 60s for netplan taking effect"
+    - name: "Sleep 60s for network reloading taking effect"
       ansible.builtin.pause:
         seconds: 60
 
-    # Update VM's guest IP
-    - include_tasks: ../../common/update_inventory.yml
+    - name: "Update VM's guest IP in case it's changed"
+      include_tasks: ../../common/update_inventory.yml
 
 - name: "Apply new network configuration file for FreeBSD"
   when: guest_os_ansible_distribution == "FreeBSD"
@@ -176,12 +183,12 @@
       include_tasks: ../utils/reboot.yml
       when: adapter_type == "e1000e"
 
-- include_tasks: ../utils/set_network_adapter_status.yml
+- name: "Bring up new network adapter"
+  include_tasks: ../utils/set_network_adapter_status.yml
   vars:
     network_adapter_name: "{{ new_network_adapter }}"
     network_adapter_status: "up"
-  when: 
-    - guest_os_network_manager != "netplan"
+  when: guest_os_network_manager not in ["netplan", "systemd-networkd"]
 
 # Get IP address of new interface
 - name: "Set fact of searching IPv4 address"
