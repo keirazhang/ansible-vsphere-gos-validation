@@ -74,42 +74,23 @@
       vars:
         network_adapter_name: "{{ new_network_adapter }}"
 
-    - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
+    # Set network config template for guest OS in RHEL family (except for Amazon Linux 2023 or later),
+    # SUSE family and Debian family (except for Ubuntu Server) 
+    - name: "Set fact of the network config template for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
-        network_config_template: rhel_network_conf.j2
+        network_config_template: "{{ guest_os_family | lower }}_network_conf.j2"
       when:
-        - guest_os_family == "RedHat"
-        - not (guest_os_ansible_distribution == 'Amazon' and
-               guest_os_ansible_distribution_major_ver | int >= 2023)
+        - guest_os_family in ["RedHat", "Suse", "Debian"]
+        - guest_os_network_manager not in ["netplan", "systemd-networkd"] 
 
-    - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
-      ansible.builtin.set_fact:
-        network_config_template: debian_network_conf.j2
-      when: >
-        (guest_os_ansible_distribution == "Debian") or
-        (guest_os_ansible_distribution == "Pardus GNU/Linux") or
-        (guest_os_ansible_distribution == "Ubuntu" and
-         guest_os_with_gui is defined and guest_os_with_gui)
-
-    - name: "Set fact of the network config template for Ubuntu server"
-      ansible.builtin.set_fact:
-        network_config_template: ubuntu_netplan_conf.j2
-      when:
-        - guest_os_ansible_distribution == "Ubuntu"
-        - guest_os_with_gui is defined and not guest_os_with_gui
-
-    - name: "Set fact of the network config template for SLE"
-      ansible.builtin.set_fact:
-        network_config_template: sles_network_conf.j2
-      when: guest_os_family == "Suse"
-
-    - name: "Set fact of the network config template for {{ guest_os_ansible_distribution }}"
+    # Set network config template for FreeBSD, Flatcar, Ubuntu Server, Amazon Linux 2023 or later
+    # SUSE family and Debian family (except for Ubuntu Server) 
+    - name: "Set fact of the network config template for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
         network_config_template: "{{ guest_os_ansible_distribution | lower }}_network_conf.j2"
       when: >-
-        guest_os_ansible_distribution in ['Flatcar', 'FreeBSD'] or
-        (guest_os_ansible_distribution == 'Amazon' and
-         guest_os_ansible_distribution_major_ver | int >= 2023)
+        guest_os_ansible_distribution == "FreeBSD" or
+        guest_os_network_manager in ["netplan", "systemd-networkd"]
 
     - name: "Create or update network config file for new network interface"
       when:

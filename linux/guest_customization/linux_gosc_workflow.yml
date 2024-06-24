@@ -58,7 +58,9 @@
           ansible.builtin.set_fact:
             guest_perl_package_list: |-
               {%- if guest_os_ansible_kernel is version('4.0', '<') -%}['perl']
-              {%- else -%}['perl-interpreter', 'perl-base', 'perl-FileHandle']{%- endif -%}
+              {%- elif guest_os_ansible_kernel is version('5.0', '<') -%}['perl-interpreter']
+              {%- else -%}['perl-interpreter', 'perl-base', 'perl-FileHandle']
+              {%- endif -%}
 
         - name: "Install perl packages on {{ vm_guest_os_distribution }}"
           include_tasks: ../utils/install_uninstall_package.yml
