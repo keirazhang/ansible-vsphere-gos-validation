@@ -25,3 +25,9 @@ echo "{{ ssh_public_key }}" > /home/{{ new_user }}/.ssh/authorized_keys
 chown --recursive {{ new_user }}:{{ new_user }} /home/{{ new_user }}/.ssh
 chmod 0644 /home/{{ new_user }}/.ssh/authorized_keys
 {% endif %}
+
+# Modify cloud-init configs about ssh
+if [ -f /etc/cloud/cloud.cfg ]; then
+    sed -i 's/^disable_root:.*/disable_root: false/' /etc/cloud/cloud.cfg
+    sed -i 's/^ssh_pwauth:.*/ssh_pwauth: yes/' /etc/cloud/cloud.cfg
+fi

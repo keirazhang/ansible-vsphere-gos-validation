@@ -1,8 +1,19 @@
+echo "Get OS release files"
+ls -l /etc/*-release
+for i in `ls /etc/*-release`; do
+    echo ""; echo $i; cat $i
+done
+
+# Set environment variables with OS release info, such as
+# OS_NAME, OS_ID, VERSION_ID, VERSION_CODENAME, etc
 echo "OS release information:"
 . /etc/os-release
 OS_NAME=$NAME
 OS_ID=$ID
-echo "OS name is $OS_NAME, release version is $VERSION_ID, codename is $VERSION_CODENAME"
+echo "OS name is $OS_NAME, release version is $VERSION_ID"
+if [ "X$VERSION_CODENAME" != "X" ]; then
+    echo "OS codename is $VERSION_CODENAME"
+fi
 
 echo "System environment variables:"
 env | sort
@@ -45,3 +56,6 @@ if [ -f /etc/systemd/system/display-manager.service ]; then
       OS_DM_CONF=""
     fi
 fi
+
+echo "Get dmesg output at post-install:"
+dmesg -c --color=never
