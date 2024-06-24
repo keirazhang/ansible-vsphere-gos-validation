@@ -1,0 +1,38 @@
+# Copyright 2024 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Wait autoinstall is successfully started
+#
+- name: "Wait autoinstall start message appear in serial port file"
+  include_tasks: ../../common/vm_wait_log_msg.yml
+  vars:
+    vm_wait_log_name: "{{ vm_serial_file_name }}"
+    vm_wait_log_msg: "{{ autoinstall_start_msg }}[^\\r\\n]*"
+    vm_wait_log_delay: 150
+    vm_wait_log_retries: 10
+
+# Ubuntu autoinstall with cloud configs requires network connection.
+# RHEL and RHEL-like OS autoinstall has IPv4 activated at network configuration. 
+# When autoinstall start message is detected, its must be followed with an IPv4
+# address get at early-commands or pre-install scripts in the unattend install 
+# config file. Otherwise, we can stop autoinstall immediately.
+- name: "Wait for autoinstall is started with a valid IPv4 address"
+  when: unattend_installer in ["Ubuntu-Subiquity", "RHEL"]
+  block:
+    - name: "Get the IPv4 address when Ubuntu autoinstall started"
+      ansible.builtin.set_fact:
+        autoinstall_start_ipv4: >-
+          {{
+            vm_wait_log_msg_list |
+            map('regex_search', '\d+(\.\d+){3}') |
+            ansible.utils.ipaddr('address')
+          }}
+
+    - name: "Check VM obtains IPv4 address when autoinstall is started"
+      ansible.builtin.assert:
+        that:
+          - autoinstall_start_ipv4
+          - autoinstall_start_ipv4 | length > 0
+          - autoinstall_start_ipv4[0] is ansible.utils.ipv4
+        fail_msg: "Autoinstall failed to start due to no IPv4 address obtained."
+        success_msg: "Autoinstall is started with IPv4 address {{ autoinstall_start_ipv4 }}"
