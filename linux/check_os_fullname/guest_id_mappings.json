@@ -1,5 +1,5 @@
 {
-    "_comment_": "This file lists the mappings from guest OS short names to guest ids for hardware version 20 VM",
+    "_comment_": "This file lists the mappings from guest OS short names to guest ids for hardware version 21 VM",
     "amazonlinux2-64": "amazonlinux2_64Guest",
     "amazonlinux3-64": "amazonlinux3_64Guest",
     "darwin": "darwinGuest",

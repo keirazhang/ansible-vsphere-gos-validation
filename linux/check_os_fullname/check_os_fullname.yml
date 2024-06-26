@@ -35,6 +35,14 @@
           include_tasks: ../../common/esxi_get_version_build.yml
           when: esxi_version is undefined or esxi_update_version is undefined
 
+        - name: "Get ESXi hardware versions"
+          include_tasks: ../../common/esxi_get_hardware_versions.yml
+
+        - name: "Get guest ids supported by ESXi latest hardware version"
+          include_tasks: ../../common/esxi_get_guest_ids.yml
+          vars:
+            esxi_hardware_version: "{{ esxi_latest_hardware_version }}"
+
         - name: "Display guest OS distribution"
           ansible.builtin.debug:
             msg: "{{ vm_guest_os_distribution }}"

@@ -17,6 +17,7 @@
   ansible.builtin.debug:
     msg:
       - "ESXi version: {{ esxi_version }}"
+      - "ESXi latest hardware version: {{ esxi_latest_hardware_version }}"
       - "VM's hardware version: {{ vm_hardware_version }}"
 
 # If the guest os full name is unmapped and displays OS detailed data on ESXi 6.7 GA and Update 1,
