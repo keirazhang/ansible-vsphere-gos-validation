@@ -74,13 +74,12 @@
            - "Fedora"
            - "openSUSE Leap"
            - "RHCOS"
+           - "Amazon"
 
     - name: "Set fact of GOSC support status to False for {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
         gosc_is_supported: false
-      when: >-
-        (guest_os_ansible_distribution in gos_not_support_gosc) or
-        (guest_os_ansible_distribution == 'Amazon' and enable_cloudinit_gosc | bool)
+      when: guest_os_ansible_distribution in gos_not_support_gosc
 
     - name: "Set cloud-init GOSC support status for {{ vm_guest_os_distribution }}"
       when:

@@ -48,27 +48,32 @@
             - vmtools_version is defined
             - vmtools_version is version('11.3.5', '>=')
 
-    # Install perl packages if they are missing
+    # Install perl if guest OS doesn't have it
     - name: "Prepare for perl GOSC testing on {{ guest_os_ansible_distribution }}"
       when:
         - not enable_cloudinit_gosc | bool
         - guest_os_family == "RedHat"
       block:
-        - name: "Set fact of perl packages"
-          ansible.builtin.set_fact:
-            guest_perl_package_list: |-
-              {%- if guest_os_ansible_kernel is version('4.0', '<') -%}
-                  ['perl']
-              {%- elif guest_os_ansible_distribution == 'Amazon' and guest_os_ansible_distribution_major_ver | int >= 2023 -%}
-                  ['perl-interpreter', 'perl-base', 'perl-FileHandle']
-              {%- else -%}
-                  ['perl-interpreter']
-              {%- endif -%}
+        - name: "Check perl existence"
+          ansible.builtin.command: "which perl"
+          failed_when: false
+          register: which_perl_result
+          delegate_to: "{{ vm_guest_ip }}"
 
-        - name: "Install perl packages on {{ vm_guest_os_distribution }}"
-          include_tasks: ../utils/install_uninstall_package.yml
-          vars:
-            package_list: "{{ guest_perl_package_list }}"
+        - name: "Install perl"
+          when: which_perl_result.rc is undefined or which_perl_result.rc != 0
+          block:
+            - name: "Set perl package name on {{ guest_os_ansible_distribution }} {{ guest_os_ansible_distribution_ver }}"
+              ansible.builtin.set_fact:
+                guest_perl_package_name: |-
+                  {%- if guest_os_ansible_kernel is version('4.0', '<') -%}perl
+                  {%- else -%}perl-interpreter{%- endif -%}
+
+            - name: "Install '{{ guest_perl_package_name }}' for perl GOSC"
+              include_tasks: ../utils/install_uninstall_package.yml
+              vars:
+                package_list: ["{{ guest_perl_package_name }}"]
+                package_state: "latest"
 
     - name: "Prepare for cloud-init GOSC"
       when: enable_cloudinit_gosc
