@@ -35,7 +35,7 @@
 - name: "Set fact of network config file for {{ vm_guest_os_distribution }}"
   when:
     - guest_os_network_manager not in ["NetworkManager", "systemd-networkd"]
-    - guest_os_ansible_distribution not in ["VMware Photon OS", "Astra Linux (Orel)", "FreeBSD"]
+    - guest_os_ansible_distribution not in ["Astra Linux (Orel)", "FreeBSD"]
   block:
     - name: "Set fact of network config file for '{{ network_adapter_name }}' on {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
