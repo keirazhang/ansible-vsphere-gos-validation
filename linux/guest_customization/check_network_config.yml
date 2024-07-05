@@ -166,7 +166,7 @@
     - name: "Set GOSC network configuration file on {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
         src_network_file: /etc/sysconfig/network-scripts/ifcfg-{{ guest_iface_name }}
-      when: guest_os_network_manager != "NetworkManager"
+      when: guest_os_network_manager not in ["NetworkManager", "systemd-networkd"]
 
     - name: "Set GOSC network configuration file on {{ vm_guest_os_distribution }}"
       when: guest_os_network_manager == "NetworkManager"
@@ -220,7 +220,7 @@
         dest_path: "{{ network_config_path }}"
 
 - name: "Collect network configuration files for {{ vm_guest_os_distribution }}"
-  when: guest_os_ansible_distribution == 'VMware Photon OS'
+  when: guest_os_network_manager == "systemd-networkd"
   block:
     - name: "List network configuration files on {{ vm_guest_os_distribution }}"
       include_tasks: ../../common/vm_shell_in_guest.yml
