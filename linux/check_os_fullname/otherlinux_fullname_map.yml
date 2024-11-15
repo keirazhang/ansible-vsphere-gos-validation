@@ -23,6 +23,7 @@
 # Guest id "other4xlinux64Guest" and full name "Other 4.x (or later) Linux (64-bit)" is available on ESXi 6.7 or later
 # Guest id "other5xlinux45Guest" and full name "Other 5.x (or later) Linux (64-bit)" is available on ESXi 7.0.1 or later
 # Guest id "other6xlinux46Guest" and full name "Other 6.x (or later) Linux (64-bit)" is available on ESXi 8.0.0 or later
+# Guest id "other7xlinux46Guest" and full name "Other 7.x (or later) Linux (64-bit)" is available on ESXi 8.0.3 or later
 - name: "Set expected_guest_id and expected_guest_fullname on ESXi {{ esxi_version }}"
   block:
     - name: "Set fact of expected guest OS major version on ESXi {{ esxi_version }}"
@@ -36,6 +37,8 @@
           {{ [linux_kernel_major_ver | int, 5 ] | min }}
           {%- elif esxi_version is version('8.0.0', '>=') -%}
           {{ [linux_kernel_major_ver | int, 6 ] | min }}
+          {%- elif esxi_version is version('8.0.3', '>=') -%}
+          {{ [linux_kernel_major_ver | int, 7 ] | min }}
           {%- endif %}
 
     - name: "Set expected_guest_id and expected_guest_fullname for {{ vm_guest_os_distribution }} on ESXi {{ esxi_version }}"

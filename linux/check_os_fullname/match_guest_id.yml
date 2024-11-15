@@ -1,0 +1,68 @@
+# Copyright 2024 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Match VM guest id with guest OS release info
+#
+- name: "Initialize facts for mapping guest id for {{ vm_guest_os_distribution }}"
+  ansible.builtin.set_fact:
+    guest_os_release_name: "{{ guest_os_release.NAME | replace(' ', '') | regex_replace('server', '', ignorecase=True) }}"
+    guest_os_release_id: "{{ guest_os_release.ID }}"
+    guest_os_release_major_version: "{{ guest_os_release.VERSION | regex_search('\\d+') }}"
+    found_matched_guest_info: false
+
+- name: "Refine guest OS release id for SLED"
+  ansible.builtin.set_fact:
+    guest_os_release_id: "sles"
+  when: guest_os_release_id | lower == "sled"
+
+# Set guest id match pattern
+- name: "Set facts for matching guest ids for {{ guest_os_release_name }} {{ guest_os_release.VERSION }}"
+  ansible.builtin.set_fact:
+    guest_id_pattern: "(?i)(({{ guest_os_release_id }})|({{ guest_os_release_name }}))\\w*\\d*"
+
+- name: "Set fact of supported guest ids for {{ guest_os_bit }} {{ guest_os_release_name }}"
+  ansible.builtin.set_fact:
+    supported_guest_ids: "{{ esxi_guest_ids | select('match', guest_id_pattern ~ '_?64Guest') }}"
+  when: guest_os_bit == '64-bit'
+
+- name: "Set fact of supported guest ids for {{ guest_os_bit }} {{ guest_os_release_name }}"
+  ansible.builtin.set_fact:
+    supported_guest_ids: "{{ esxi_guest_ids | reject('match', '64Guest') | select('match', guest_id_pattern) }}"
+  when: guest_os_bit != '64-bit'
+
+- name: "Look for closest supported guest version"
+  when: supported_guest_ids | length > 0
+  block:
+    - name: "Set fact of supported guest OS versions for {{ guest_os_release_name }} on ESXi {{ esxi_version }}"
+      ansible.builtin.set_fact:
+        supported_guest_versions: "{{ supported_guest_ids | map('regex_replace', '(64)?Guest', '') | map('regex_search', '\\d+') | map('replace', 'None', 0) }}"
+
+    - name: "Get closest guest id version"
+      ansible.builtin.set_fact:
+        closest_guest_version: "{{ supported_guest_versions | map('int') | select('<=', guest_os_release_major_version | int) | max }}"
+
+    - name: "Get closest guest id index in supported guest ids"
+      ansible.builtin.set_fact:
+        closest_guest_id_index: "{{ lookup('ansible.utils.index_of', supported_guest_versions, '==', closest_guest_version)  }}"
+
+    - name: "Set expected guest id for {{ vm_guest_os_distribution }}"
+      ansible.builtin.set_fact:
+        expected_guest_id: "{{ supported_guest_ids[closest_guest_id_index | int] }}"
+
+    - name: "Get guest id options"
+      include_tasks: ../../common/esxi_get_guest_config_options.yml
+      vars:
+        esxi_hardware_version: "{{ guest_info_latest_hwv }}"
+        guest_id: "{{ expected_guest_id }}"
+
+    - name: "Set expected guest full name for {{ guest_os_release_name }} {{ guest_os_release.VERSION }}"
+      ansible.builtin.set_fact:
+        expected_guest_fullname: "{{ guest_config_options.guest_fullname }}"
+      when: guest_config_options.guest_fullname is defined
+
+    - name: "Set fact that matched guest id and full name are found"
+      ansible.builtin.set_fact:
+        found_matched_guest_info: true
+      when:
+        - expected_guest_id
+        - expected_guest_fullname

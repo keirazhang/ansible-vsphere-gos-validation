@@ -31,17 +31,25 @@
             - name: "Enable debug logging for VMware Tools"
               include_tasks: ../utils/enable_vmtools_logging.yml
 
-        - name: "Get ESXi version and build"
-          include_tasks: ../../common/esxi_get_version_build.yml
-          when: esxi_version is undefined or esxi_update_version is undefined
+        - name: "Get latest hardware version for checking guest info on ESXI {{ esxi_version }}"
+          when: esxi_version is version('!=', '8.0.3')
+          block:
+            - name: "Get ESXi hardware versions"
+              include_tasks: ../../common/esxi_get_hardware_versions.yml
+    
+            - name: "Set fact of latest hardware version for checking guest info on ESXI {{ esxi_version }}"
+              ansible.builtin.set_fact:
+                guest_info_latest_hwv:  "{{ esxi_latest_hardware_version }}"
 
-        - name: "Get ESXi hardware versions"
-          include_tasks: ../../common/esxi_get_hardware_versions.yml
+        - name: "Set latest hardware version for checking guest info on ESXI {{ esxi_version }}"
+          ansible.builtin.set_fact:
+            guest_info_latest_hwv: 22
+          when: esxi_version is version('=', '8.0.3')
 
         - name: "Get guest ids supported by ESXi latest hardware version"
           include_tasks: ../../common/esxi_get_guest_ids.yml
           vars:
-            esxi_hardware_version: "{{ esxi_latest_hardware_version }}"
+            esxi_hardware_version: "{{ guest_info_latest_hwv }}"
 
         - name: "Display guest OS distribution"
           ansible.builtin.debug:
