@@ -66,13 +66,44 @@
           ansible.builtin.set_fact:
             guest_short_name: "{{ get_shortname_result.stdout | default('') }}"
 
-        - name: "Set expected guest id, full name and family when guest short-name is set"
-          include_tasks: set_guestinfo_with_shortname.yml
-          when: guest_short_name
+        - name: "Match guest id for {{ vm_guest_os_distribution }}"
+          include_tasks: match_guest_id.yml
 
-        - name: "Set expected guest id, full name and family when guest short-name is not set"
-          include_tasks: set_guestinfo_without_shortname.yml
-          when: not guest_short_name
+        - name: "Set guest id case by case"
+          block:
+            - name: "Set expected guest id for {{ vm_guest_os_distribution }}"
+              include_tasks: "{{ guest_os_ansible_distribution | lower }}_fullname_map.yml"
+              when: guest_os_ansible_distribution in ["AlmaLinux", "Rocky", "MIRACLE"]
+        
+            - name: "Set expected guest id for {{ vm_guest_os_distribution }}"
+              include_tasks: otherlinux_fullname_map.yml
+              when: not found_matched_guest_i
+
+        - name: "Get expected guest full name by guest id {{ expected_guest_id }}"
+          when: expected_guest_id
+          block:
+            - name: "Get guest id options"
+              include_tasks: ../../common/esxi_get_guest_config_options.yml
+              vars:
+                esxi_hardware_version: "{{ guest_info_latest_hwv }}"
+                guest_id: "{{ expected_guest_id }}"
+
+            - name: "Check guest full name is defined for guest id {{ expected_guest_id }}"
+              ansible.builtin.assert:
+                that:
+                  - guest_config_options.guest_id is defined
+                  - guest_config_options.guest_id == expected_guest_id
+                  - guest_config_options.guest_fullname is defined
+                  - guest_config_options.guest_fullname
+                fail_msg: >-
+                  Failed to find guest full name for guest id {{ expected_guest_id }} on ESXi {{ esxi_version }}
+
+            - name: "Set expected guest full name and family for {{ guest_os_release_name }} {{ guest_os_release.VERSION }}"
+              ansible.builtin.set_fact:
+                expected_guest_fullname: "{{ guest_config_options.guest_fullname }}"
+                expected_guest_family: |-
+                  {%- if expected_guest_id is match('freebsd.*') -%}otherGuestFamily
+                  {%- else -%}linuxGuest{%- endif -%}
 
         - name: "Validate guest OS full name in guestinfo"
           include_tasks: validate_os_fullname.yml
