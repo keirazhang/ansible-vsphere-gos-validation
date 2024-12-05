@@ -16,7 +16,7 @@
 
 - name: "Initialize the timeout seconds to wait for VMware Tools collecting guest OS fullname"
   ansible.builtin.set_fact:
-    vm_get_fullname_timeout: 300
+    vm_get_fullname_timeout: 900
   when: vm_get_fullname_timeout is undefined or not vm_get_fullname_timeout
 
 - name: "Wait for VMware Tools collecting guest OS fullname"

@@ -141,6 +141,8 @@
 
 - name: "Wait for VM's guest full name is displayed in guest info"
   include_tasks: ../../common/vm_wait_guest_fullname.yml
+  vars:
+    vm_get_fullname_timeout: 900
 
 - name: "Update VM's guest IP after reset"
   include_tasks: ../../common/update_inventory.yml

@@ -265,7 +265,7 @@
 - name: "Wait for guest full name is collected"
   include_tasks: ../../common/vm_wait_guest_fullname.yml
   vars:
-    vm_get_fullname_timeout: 600
+    vm_get_fullname_timeout: 900
   when:
     - unattend_install_conf is defined
     - unattend_install_conf | lower is not match('.*(minimal|server_without_gui|bclinux-for-euler|fusionos|kylin/server/10).*')
