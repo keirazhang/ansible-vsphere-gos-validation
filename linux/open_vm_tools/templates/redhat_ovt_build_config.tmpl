@@ -1,0 +1,66 @@
+# This file lists the dependent packages for building open-vm-tools source tarball on RedHat family guest OS
+dependencies:
+  # Basic build tools
+  - autoconf
+  - automake
+  - gcc
+  - gcc-c++
+  - make
+  - pkg-config
+  - rpm-build
+
+  # Documentation
+  - doxygen
+
+  # Development libraries
+  - fuse-devel
+  - glib2-devel
+  - libdrm-devel
+  - libicu-devel
+  - libmspack-devel
+  - libtirpc-devel
+  - libtool
+  - libtool-ltdl-devel
+  - openssl-devel
+  - pam-devel
+  - procps-ng-devel
+  - systemd-devel
+  - valgrind-devel
+
+  # X11 related dependencies
+  - libX11-devel
+  - libXext-devel
+  - libXi-devel
+  - libXinerama-devel
+  - libXrandr-devel
+  - libXrender-devel
+  - libXtst-devel
+
+  # XML related dependencies
+  - libxml2-devel
+  - xmlsec1-devel
+  - xmlsec1-openssl-devel
+
+  # Additional tools
+  - rpcgen
+
+  # GDK Pixbuf dependencies based on distribution version #
+  - gdk-pixbuf2-xlib-devel
+
+  # GUI-related dependencies #
+  {%- if guest_os_with_gui %}
+    {%- if guest_os_ansible_distribution in ['RedHat', 'CentOS', 'AlmaLinux', 'Rocky',
+                                          'Fedora', 'ProLinux', 'MIRACLE LINUX'] and
+        guest_os_ansible_distribution_major_ver | int >= 10 %}
+  - gtk4-devel
+  - gtkmm4.0-devel
+    {%- else %}
+  - gtk3-devel
+      {%- if guest_os_ansible_distribution == 'Fedora' and
+          guest_os_ansible_distribution_major_ver is version('36', '>')%}
+  - gtkmm3.0-devel
+      {%- else %}
+  - gtkmm30-devel
+      {%- endif %}
+    {%- endif %}
+  {%- endif %}

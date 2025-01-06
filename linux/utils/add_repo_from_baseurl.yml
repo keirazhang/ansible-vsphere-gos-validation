@@ -15,9 +15,17 @@
     that:
       - repo_name is defined and repo_name
       - (repo_baseurl is defined and repo_baseurl) or (repo_mirrorlist is defined and repo_mirrorlist)
-    fail_msg: "Invalid parameters: repo_name={{ repo_name | default('undefined') }}, repo_baseurl={{ repo_baseurl | default('undefined') }}, repo_mirrorlist = {{ repo_mirrorlist | default('undefined') }}"
+    fail_msg: >-
+      Parameters 'repo_name', and 'repo_baseurl' or 'repo_mirrorlist' must be set for adding repository.
+      At present, repo_name={{ repo_name | default('undefined') }},
+      repo_baseurl={{ repo_baseurl | default('undefined') }},
+      repo_mirrorlist={{ repo_mirrorlist | default('undefined') }}
 
 - name: "Set default RPM GPG key"
+  when:
+    - gpg_check is defined
+    - gpg_check
+    - gpg_key_path is undefined or not gpg_key_path
   block:
     - name: "Get default RPM GPG key file"
       include_tasks: get_rpm_gpg_key_file.yml
@@ -31,16 +39,13 @@
       ansible.builtin.fail:
         msg: "Can't not add repository when GPG check is enabled but no RPM GPG key is found."
       when: not guest_rpm_gpg_key_path
-  when:
-    - gpg_check is defined
-    - gpg_check
-    - gpg_key_path is undefined or not gpg_key_path
 
 - name: "Initialize the prefix for local repository"
   ansible.builtin.set_fact:
     repo_baseurl_prefix: ""
 
-- name: "Add yum repository for {{ guest_os_ansible_distribution }}"
+- name: "Add yum repository for {{ vm_guest_os_distribution }}"
+  when: guest_os_family in ["RedHat", "VMware Photon OS"]
   block:
     - name: "Set the prefix for local yum repository"
       ansible.builtin.set_fact:
@@ -49,11 +54,11 @@
         - repo_baseurl is sequence
         - repo_baseurl[0] == '/'
 
-    - name: "Add repository {{ repo_name }} from {{ repo_baseurl }}"
+    - name: "Add repository {{ repo_name }} from {{ repo_baseurl | default(repo_mirrorlist) }}"
       ansible.builtin.yum_repository:
         name: "{{ repo_name }}"
         description: "{{ repo_description | default(repo_name) }}"
-        baseurl: "{{ (repo_baseurl_prefix ~ repo_baseurl) | default(omit) }}"
+        baseurl: "{{ repo_baseurl_prefix ~ repo_baseurl if repo_baseurl is defined and repo_baseurl else omit }}"
         mirrorlist: "{{ repo_mirrorlist | default(omit) }}"
         enabled: true
         gpgcheck: "{{ gpg_check | default(false) }}"
@@ -66,6 +71,10 @@
       ansible.builtin.debug: var=add_yum_repo_result
 
     - name: "Update yum repository file"
+      when:
+        - add_yum_repo_result is defined
+        - add_yum_repo_result.diff is defined
+        - add_yum_repo_result.diff.after_header is defined
       block:
         - name: "Get new repository file path"
           ansible.builtin.set_fact:
@@ -74,13 +83,11 @@
         - name: "Remove spaces in repository file"
           ansible.builtin.shell: "sed -i 's/ *= */=/' {{ new_yum_repo_path }}"
           delegate_to: "{{ vm_guest_ip }}"
-      when:
-        - add_yum_repo_result is defined
-        - add_yum_repo_result.diff is defined
-        - add_yum_repo_result.diff.after_header is defined
-  when: guest_os_family in ["RedHat", "VMware Photon OS"]
 
-- name: "Add zypper repository for {{ guest_os_ansible_distribution }}"
+- name: "Add zypper repository for {{ vm_guest_os_distribution }}"
+  when:
+    - guest_os_family == "Suse"
+    - repo_baseurl is defined
   block:
     - name: "Set the prefix for local zypper repository"
       ansible.builtin.set_fact:
@@ -98,4 +105,3 @@
         enabled: true
         runrefresh: true
       delegate_to: "{{ vm_guest_ip }}"
-  when: guest_os_family == "Suse"

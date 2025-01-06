@@ -84,7 +84,7 @@
     skip_reason: "Not Supported"
   when:
     - linux_ovt_install_type == "source"
-    - guest_os_family not in ["Suse", "Debian", "FreeBSD"]
+    - guest_os_ansible_distribution in ['ProLinux']
 
 - name: "Initialize fact whether to uninstall open-vm-tools"
   ansible.builtin.set_fact:
@@ -117,16 +117,16 @@
   when: guest_os_ansible_distribution in ['CentOS', 'VMware Photon OS', 'Debian']
 
 # Add local DVD repository or online repository for installing OS bundled open-vm-tools
+# or installing open-vm-tools dependencies
 - name: "Add package repositories for {{ guest_os_ansible_distribution }}"
-  when: linux_ovt_repo_url is undefined or not linux_ovt_repo_url
+  when: >-
+    linux_ovt_install_type == "source" or
+    linux_ovt_repo_url is undefined or
+    not linux_ovt_repo_url
   block:
     - name: "Set fact of enabling local DVD repository"
       ansible.builtin.set_fact:
-         enable_local_dvd_repo: >-
-           {{
-             guest_os_ansible_distribution in ['SLES', 'SLED', 'openSUSE Leap',
-                                               'RedHat', 'Rocky', 'AlmaLinux', 'ProLinux']
-           }}
+         enable_local_dvd_repo: "{{ guest_os_family in ['Suse', 'RedHat'] }}"
 
     - name: "Add a local package repository from ISO image for {{ guest_os_ansible_distribution }}"
       include_tasks: ../utils/add_local_dvd_repo.yml
@@ -134,9 +134,10 @@
 
     - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
       include_tasks: ../utils/add_official_online_repo.yml
-      when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
+      when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux',
+                                                  'CentOS', 'VMware Photon OS', 'Debian']
 
-# Add an extra online repository for install not-bundled open-vm-tools
+# Add an user defined online repository for install not-bundled open-vm-tools
 - name: "Add an extra open-vm-tools repository from URL"
   include_tasks: ../utils/add_extra_online_repo.yml
   vars:

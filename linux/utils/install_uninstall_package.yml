@@ -81,12 +81,11 @@
         - name: "Add OS release package repositories"
           when: package_repo_enable | default(true)
           block:
-            - name: "Add a local repo from ISO image for {{ guest_os_ansible_distribution }}"
+            - name: "Add a local repo from ISO image for {{ vm_guest_os_distribution }}"
               include_tasks: ../utils/add_local_dvd_repo.yml
-              when: guest_os_ansible_distribution in ['SLES', 'SLED', 'RedHat', 'Rocky',
-                                                'AlmaLinux', 'openSUSE Leap', 'ProLinux']
+              when: guest_os_family in ['Suse', 'RedHat']
 
-            - name: "Add known online repos for other Linux OS"
+            - name: "Add guest OS official online repos for {{ vm_guest_os_distribution }}"
               include_tasks: ../utils/add_official_online_repo.yml
               when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
 

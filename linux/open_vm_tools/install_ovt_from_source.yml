@@ -6,6 +6,11 @@
 - name: "Set facts of config files for building and checking open-vm-tools"
   ansible.builtin.set_fact:
     ovt_install_prefix: "{{ '/usr' if guest_os_ansible_system == 'linux' else '/usr/local' }}"
+    ovt_install_lib: |-
+      {%- if guest_os_ansible_system == 'freebsd' -%}/usr/local/lib
+      {%- elif guest_os_family == 'RedHat' -%}/usr/lib64
+      {%- else -%}/usr/lib
+      {%- endif -%}
     ovt_build_config_file_tmpl: "{{ guest_os_ansible_system }}_ovt_build_config.tmpl"
     ovt_build_config_file_path: "{{ current_test_log_folder }}/ovt_build_config.yml"
     ovt_check_config_file_tmpl: "{{ guest_os_ansible_system }}_ovt_check_config.tmpl"
@@ -23,6 +28,13 @@
     ovt_configure_options: "{{ _ovt_build_config.configure_options | default([]) }}"
   vars:
     _ovt_build_config: "{{ lookup('file', ovt_build_config_file_path) | from_yaml }}"
+
+- name: "Add --without-x to configure options because {{ vm_guest_os_distribution }} doesn't have GTK3"
+  ansible.builtin.set_fact:
+    ovt_configure_options: "{{ ovt_configure_options | union(['--without-x']) }}"
+  when:
+    - guest_os_ansible_system == 'linux'
+    - ovt_dependencies | select('search', 'gtk[^0-9]*3') | length == 0
 
 - name: "Check open-vm-tools dependencies are not empty"
   ansible.builtin.assert:
