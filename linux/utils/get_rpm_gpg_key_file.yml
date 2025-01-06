@@ -101,7 +101,7 @@
       when: guest_os_ansible_distribution != "VMware Photon OS"
       block:
         - name: "Look for RPM GPG key files"
-          ansible.builtin.command: "ls -1 /etc/pki/rpm-gpg/RPM-GPG-KEY-*"
+          ansible.builtin.command: "find /etc/pki/rpm-gpg/ -name 'RPM-GPG-KEY-*'"
           delegate_to: "{{ vm_guest_ip }}"
           register: list_rpm_gpg_keys
           changed_when: false

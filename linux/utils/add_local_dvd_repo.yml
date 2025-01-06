@@ -36,7 +36,10 @@
     vm_cdrom_iso_file: "{{ os_installation_iso_list[0] }}"
 
 - name: "Disable all existing repositories"
-  include_tasks: ../utils/disable_repo.yml
+  include_tasks: ../utils/enable_disable_repo.yml
+  vars:
+    repo_op: "disable"
+    repo_op_ignore_errors: true
   when: guest_os_ansible_distribution in ['RedHat', 'SLES', 'SLED', 'openSUSE Leap', 'ProLinux']
 
 - name: "Get the fact of system devices"
