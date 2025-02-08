@@ -42,13 +42,13 @@
   block:
     - name: "Set facts about guest OS online repositories"
       ansible.builtin.set_fact:
-        guest_online_repo_website: |-
+        guest_online_repo_url: |-
           {%- if guest_os_ansible_distribution == "AlmaLinux" -%}https://repo.almalinux.org/almalinux/$releasever
           {%- elif guest_os_ansible_distribution == "Rocky" -%}http://dl.rockylinux.org/$contentdir/$releasever
           {%- elif guest_os_ansible_distribution_ver is version('8.5', '>') -%}http://mirror.stream.centos.org/$releasever-stream
           {%- else -%}http://vault.centos.org/$contentdir/$releasever
           {%- endif -%}
-        guest_builtin_repo_ids: |-
+        guest_online_repo_ids: |-
           {%- if guest_os_ansible_distribution_major_ver | int == 8 -%}['BaseOS', 'AppStream', 'PowerTools']
           {%- else -%}['BaseOS', 'AppStream', 'CRB']
           {%- endif -%}
@@ -59,7 +59,7 @@
         repo_name: "{{ item | lower }}"
         repo_op: "enable"
         repo_op_ignore_errors: true
-      with_items: "{{ guest_builtin_repo_ids }}"
+      with_items: "{{ guest_online_repo_ids }}"
 
     - name: "Set online repositories for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
@@ -67,8 +67,8 @@
       vars:
         repo_prefix: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}"
         repo_name: "{{ repo_prefix }}_{{ item }}"
-        repo_baseurl: "{{ guest_online_repo_website }}/{{ item }}/$basearch/os/"
-      with_items: "{{ guest_builtin_repo_ids }}"
+        repo_baseurl: "{{ guest_online_repo_url }}/{{ item }}/$basearch/os/"
+      with_items: "{{ guest_online_repo_ids }}"
 
 - name: "Set online repositories for Oracle Linux"
   when: guest_os_ansible_distribution == "OracleLinux"
