@@ -84,7 +84,7 @@
     skip_reason: "Not Supported"
   when:
     - linux_ovt_install_type == "source"
-    - guest_os_ansible_distribution in ['ProLinux']
+    - guest_os_ansible_distribution == 'ProLinux'
 
 - name: "Initialize fact whether to uninstall open-vm-tools"
   ansible.builtin.set_fact:
@@ -109,33 +109,6 @@
 
     - name: "Uninstall open-vm-tools packages"
       include_tasks: uninstall_ovt.yml
-
-# Add package repositories
-# Always add online package repositories for CentOS/VMware Photon OS/Debian
-- name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
-  include_tasks: ../utils/add_official_online_repo.yml
-  when: guest_os_ansible_distribution in ['CentOS', 'VMware Photon OS', 'Debian']
-
-# Add local DVD repository or online repository for installing OS bundled open-vm-tools
-# or installing open-vm-tools dependencies
-- name: "Add package repositories for {{ guest_os_ansible_distribution }}"
-  when: >-
-    linux_ovt_install_type == "source" or
-    linux_ovt_repo_url is undefined or
-    not linux_ovt_repo_url
-  block:
-    - name: "Set fact of enabling local DVD repository"
-      ansible.builtin.set_fact:
-         enable_local_dvd_repo: "{{ guest_os_family in ['Suse', 'RedHat'] }}"
-
-    - name: "Add a local package repository from ISO image for {{ guest_os_ansible_distribution }}"
-      include_tasks: ../utils/add_local_dvd_repo.yml
-      when: enable_local_dvd_repo | bool
-
-    - name: "Add online package repositories for {{ guest_os_ansible_distribution }}"
-      include_tasks: ../utils/add_official_online_repo.yml
-      when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux',
-                                                  'CentOS', 'VMware Photon OS', 'Debian']
 
 # Add an user defined online repository for install not-bundled open-vm-tools
 - name: "Add an extra open-vm-tools repository from URL"

@@ -4,8 +4,10 @@
 # Enable or disable a package reposiotory
 # Parameter
 #   repo_op: The operation on the repository: enable or disable
-#   repo_name: The repository name to enable or disable
-#   repo_op_ignore_errors: True to ignore errors when enabling or disabling repositories
+#   repo_name: The repository name to enable or disable.
+#     If it is not set, all repositories will be enabled or disabled.
+#   repo_op_ignore_errors(Optional): True to ignore errors when enabling or disabling repositories.
+#     The default value is false.
 #
 - name: "Check repo_op is set"
   ansible.builtin.assert:
