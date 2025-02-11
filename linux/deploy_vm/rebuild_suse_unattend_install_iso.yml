@@ -1,0 +1,53 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Rebuild SUSE image with unattended install file
+# Parameters:
+#   rebuilt_unattend_iso_path: Local path to the rebuilt ISO image with unattend install config file
+#   src_iso_file_path: Local path of source ISO image file
+#   src_iso_file_dir: Local dir of source ISO image file
+#
+- name: "Set fact of the GRUB config file path in ISO image"
+  ansible.builtin.set_fact:
+    grub_cfg_in_iso: "boot/grub2/grub.cfg"
+
+- name: "Extract GRUB config file from ISO image"
+  include_tasks: ../../common/extract_iso.yml
+  vars:
+    iso_extract_image: "{{ src_iso_file_path }}"
+    iso_extract_dest: "{{ src_iso_file_dir }}"
+    iso_extract_files:
+      - "{{ grub_cfg_in_iso }}"
+
+- name: "Check ISO file is extracted"
+  ansible.builtin.assert:
+    that:
+      - extracted_iso_files | length == 1
+    fail_msg: "Failed to extract '{{ grub_cfg_in_iso }}' from ISO image file"
+    success_msg: "Successfully extracted '{{ grub_cfg_in_iso }}' from ISO image file"
+
+- name: "Set fact of the extracted GRUB config file path in local"
+  ansible.builtin.set_fact:
+    grub_cfg_in_local: "{{ extracted_iso_files[0] }}"
+
+- name: "Update timeout for boot menu"
+  ansible.builtin.replace:
+    path: "{{ grub_cfg_in_local }}"
+    regexp: "^set timeout=.*"
+    replace: "set timeout=1"
+
+- name: "Update boot menu with Agama installer profile"
+  ansible.builtin.replace:
+    path: "{{ grub_cfg_in_local }}"
+    regexp: '(.*)(/boot/x86_64/loader/linux)(.*)'
+    replace: "\\1\\2 agama.auto=file:///run/initramfs/live/{{ unattend_install_file_name }} live.password={{ vm_password }} console=ttyS0,115200n8 \\3"
+
+- name: "Customize the ISO"
+  community.general.iso_customize:
+    src_iso: "{{ src_iso_file_path }}"
+    dest_iso: "{{ rebuilt_unattend_iso_path }}"
+    add_files:
+      - src_file: "{{ grub_cfg_in_local }}"
+        dest_file: "{{ grub_cfg_in_iso }}"
+      - src_file: "{{ new_unattend_install_conf }}"
+        dest_file: "{{ unattend_install_file_name }}"

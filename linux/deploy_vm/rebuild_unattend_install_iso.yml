@@ -31,4 +31,4 @@
 
 - name: "Rebuild ISO image file for {{ unattend_installer }}"
   include_tasks: "rebuild_{{ unattend_installer.split('-')[0] | lower }}_unattend_install_iso.yml"
-  when: unattend_installer in ["Ubuntu-Ubiquity", "Ubuntu-Subiquity", "Photon", "Debian", "Pardus", "FreeBSD"]
+  when: unattend_installer in ["Ubuntu-Ubiquity", "Ubuntu-Subiquity", "Photon", "Debian", "Pardus", "FreeBSD", "SUSE"]

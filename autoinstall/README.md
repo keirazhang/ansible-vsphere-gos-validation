@@ -2,9 +2,9 @@
 1. For CentOS 7.x unattend auto-install, please use files under CentOS/7 or RHEL/7.
 2. For RHEL or RHEL-like varieties 7.x unattend auto-install, please use files under RHEL/7.
 3. For RHEL or RHEL-like varieties 8.x or later unattend auto-install, please use files under RHEL/8.
-4. For SLES 15 SP3 or later unattend auto-install, please use files under SLE/15/SP3/SLES or SLE/15/SP3/SLES_Minimal.
+4. For SLES 15 SP3 ~ SP7 unattend auto-install, please use files under SLE/15/SP3/SLES or SLE/15/SP3/SLES_Minimal.
 5. For SLED 15 SP3 unattend auto-install, please use SLE/15/SP3/SLED/autoinst.xml.
-6. For SLED 15 SP4 or later unattend auto-install, please use SLE/15/SP4/SLED/autoinst.xml.
+6. For SLED 15 SP4 ~ SP7 unattend auto-install, please use SLE/15/SP4/SLED/autoinst.xml.
 7. For Windows 10, or Windows 11 with TPM device unattend auto-install, please use files under Windows/win10.
 8. For Windows 11 without TPM device unattend auto-install, please use files under Windows/win11 to bypass TPM check during installation.
 9. For Windows Server LTSC releases unattend auto-install, please use files under Windows/win_server.
@@ -21,13 +21,15 @@
 20. For FreeBSD 14 or later unattend auto-install, please use file FreeBSD/14/installerconfig.
 21. For Pardus 21.2 Server and XFCE Desktop or later unattend auto-install, please use file Pardus/preseed.cfg.
 22. For Pardus 23.x Server and XFCE Desktop unattend auto-install, please use file Pardus/preseed.cfg.
-23. For openSUSE Leap 15.3 or later unattend auto-install, please use file openSUSE/15/autoinst.xml.
+23. For openSUSE Leap 15.3 ~ 15.6 unattend auto-install, please use file openSUSE/15/autoinst.xml.
 24. For BCLinux 8.x unattend auto-install, please use file BCLinux/8/ks.cfg.
 25. For BCLinux-for-Euler 21.10 unattend auto-install, please use file BCLinux-for-Euler/21.10/ks.cfg.
 26. For FusionOS 22 unattend auto-install, please use files under Fusion.
 27. For FusionOS 23 unattend auto-install, please use file Fusion/server_without_GUI/ks.cfg.
 28. For Kylin Linux Advanced Server V10 unattend auto-install, please use file Kylin/Server/10/ks.cfg.
 29. For CentOS Stream 8 or later unattend auto-install, please use files under RHEL/8.
+30. For SLES 16 SP0 or later unattend auto-install, please use files under SUSE/16/SP0/profile_sles.jsonnet.
+31. For openSUSE 16.0 or later unattend auto-install, please use SUSE/16/SP0/profile_opensuse.jsonnet.
 
 # Notes
 ## For Windows

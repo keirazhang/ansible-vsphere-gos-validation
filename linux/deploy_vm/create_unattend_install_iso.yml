@@ -40,7 +40,7 @@
   ansible.builtin.set_fact:
     autoinstall_start_msg: "Autoinstall is started."
     autoinstall_ipv4_msg: "IPv4-address="
-  when: unattend_installer in ["Ubuntu-Ubiquity", "Ubuntu-Subiquity", "Debian", "Pardus", "FreeBSD"]
+  when: unattend_installer in ["Ubuntu-Ubiquity", "Ubuntu-Subiquity", "Debian", "Pardus", "FreeBSD", "SUSE"]
 
 # unattend_install_conf is not for Ubuntu Server, Ubuntu Desktop 23.04 and later
 - name: "Create unattend install ISO for {{ unattend_installer }}"
@@ -55,7 +55,7 @@
       include_tasks: create_unattend_install_conf_file.yml
 
     - name: "Create unattend install ISO file for {{ unattend_installer }}"
-      when: unattend_installer not in ['Ubuntu-Ubiquity', 'Photon', 'Debian', 'FreeBSD', 'Pardus']
+      when: unattend_installer not in ['Ubuntu-Ubiquity', 'Photon', 'Debian', 'FreeBSD', 'Pardus', 'SUSE']
       block:
         - name: "Set fact of generated unattend install ISO file name"
           ansible.builtin.set_fact:
@@ -73,7 +73,7 @@
             create_iso_vol_ident: 'OEMDRV'
 
     - name: "Rebuild OS installation ISO for {{ unattend_installer }}"
-      when: unattend_installer in ['Ubuntu-Ubiquity', 'Photon', 'Debian', 'FreeBSD', 'Pardus']
+      when: unattend_installer in ['Ubuntu-Ubiquity', 'Photon', 'Debian', 'FreeBSD', 'Pardus', 'SUSE']
       block:
         - name: "Set fact of the rebuilt new OS installation ISO file name"
           ansible.builtin.set_fact:
