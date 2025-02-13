@@ -129,7 +129,7 @@
             vc_cert_path: "{{ current_test_log_folder }}"
           when: key_provider_type is defined and key_provider_type
 
-        - name: "Add virtual TPM device to VM" 
+        - name: "Add virtual TPM device to VM"
           include_tasks: ../../common/vm_add_remove_vtpm.yml
           vars:
             vtpm_operation: 'present'
@@ -151,22 +151,24 @@
 - name: "Get VM's primary network adapter MAC address"
   include_tasks: ../../common/vm_wait_primary_nic_mac.yml
 
-# VMware Photon OS kickstart file can't add shutdown action,
+# VMware Photon OS unattended config file can't add shutdown action,
 # so here needs to shutdown it separately
-- name: "Shutdown VMware Photon OS VM after auto install completes"
-  when: unattend_installer == 'Photon'
+# Workaround for SUSE autoinstall ISO, which can't shutdown at post-intall
+- name: "Shutdown VM after auto-install completes"
+  when: not unattend_installer or unattend_installer == 'Photon'
   block:
     - name: "Wait for guest full name on VMware Photon OS VM"
       include_tasks: ../../common/vm_wait_guest_fullname.yml
       vars:
         vm_get_fullname_timeout: 600
+      when: unattend_installer == 'Photon'
 
     - name: "Get guest IP address"
       include_tasks: ../../common/update_inventory.yml
       vars:
         update_inventory_timeout: 300
 
-    - name: "Shutdown guest OS to remove serial port"
+    - name: "Shutdown guest OS after autoinstall completes"
       include_tasks: ../utils/shutdown.yml
 
 - name: "Wait for VM being powered off"

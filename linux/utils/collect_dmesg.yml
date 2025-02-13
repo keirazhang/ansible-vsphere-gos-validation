@@ -21,6 +21,7 @@
   ignore_errors: "{{ dmesg_ignore_errors | default(false) }}"
   delegate_to: "{{ vm_guest_ip }}"
   register: dmesg_cmd_result
+  no_log: true
 
 - name: "Save dmesg output to local file in test case log folder"
   when:
