@@ -20,13 +20,23 @@
     folder: "{{ vm_folder }}"
     vm_type: "all"
   register: all_vm_facts
+  retries: 10
+  delay: 5
+  until:
+    - all_vm_facts.failed is defined
+    - not all_vm_facts.failed
 
-- block:
+- name: "Check VM exists or not"
+  when:
+    - all_vm_facts is defined
+    - all_vm_facts.virtual_machines is defined
+    - all_vm_facts.virtual_machines | length > 0
+  block:
     - name: "Set fact of existing VM basic information"
       ansible.builtin.set_fact:
         existing_vm_info: "{{ all_vm_facts.virtual_machines | selectattr('guest_name', 'equalto', vm_name) }}"
 
-    - name: "A VM, template or vApp with name '{{ vm_name }}' exists"
+    - name: "Display the existing A VM, template or vApp info"
       ansible.builtin.debug: var=existing_vm_info
       when: enable_debug and existing_vm_info
 
@@ -34,10 +44,6 @@
       ansible.builtin.set_fact:
         vm_exists: true
       when: existing_vm_info | length > 0
-  when:
-    - all_vm_facts is defined
-    - all_vm_facts.virtual_machines is defined
-    - all_vm_facts.virtual_machines
 
 - name: "Print the fact that VM exists or not"
   ansible.builtin.debug: var=vm_exists
