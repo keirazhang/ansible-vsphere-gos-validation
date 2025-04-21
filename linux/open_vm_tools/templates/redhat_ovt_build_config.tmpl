@@ -48,19 +48,22 @@ dependencies:
   - gdk-pixbuf2-xlib-devel
 
   # GUI-related dependencies #
-  {%- if guest_os_with_gui %}
-    {%- if guest_os_ansible_distribution in ['RedHat', 'CentOS', 'AlmaLinux', 'Rocky',
-                                          'Fedora', 'ProLinux', 'MIRACLE LINUX'] and
-        guest_os_ansible_distribution_major_ver | int >= 10 %}
+{% if guest_os_with_gui %}
+  # Fedora 36 or later has both of GTK4 and GTK3
+  # RHEL or RHEL-like OS 10.x has GTK 4
+  {%- if guest_os_ansible_distribution_major_ver | int >= 10 %}
   - gtk4-devel
-  - gtkmm4.0-devel
-    {%- else %}
+  - gtkmm4*-devel
+
+  {%- else %}
+  # RHEL or RHEL-like OS 8.x, 9.x has GTK 3
   - gtk3-devel
-      {%- if guest_os_ansible_distribution == 'Fedora' and
-          guest_os_ansible_distribution_major_ver is version('36', '>')%}
-  - gtkmm3.0-devel
-      {%- else %}
-  - gtkmm30-devel
-      {%- endif %}
-    {%- endif %}
+  - gtkmm3*-devel
+#      {%- if guest_os_ansible_distribution == 'Fedora' and
+#          guest_os_ansible_distribution_major_ver is version('36', '>')%}
+#  - gtkmm3.0-devel
+#      {%- else %}
+#  - gtkmm30-devel
+#      {%- endif %}
   {%- endif %}
+{%- endif %}
