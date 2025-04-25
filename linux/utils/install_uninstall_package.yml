@@ -71,6 +71,9 @@
 - name: "{{ package_manage_op }} packages on {{ guest_os_ansible_distribution }}"
   when: package_manage_list | length > 0
   block:
+    - name: "Config OS package repositories"
+      include_tasks: config_repo.yml
+
     - name: "{{ package_manage_op }} packages on {{ guest_os_ansible_distribution }}"
       when: guest_os_ansible_distribution in ["VMware Photon OS", "FreeBSD"]
       block:

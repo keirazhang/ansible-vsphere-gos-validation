@@ -12,30 +12,6 @@
   include_tasks: ../utils/disable_auto_update.yml
   when: guest_os_ansible_distribution in ["Ubuntu"]
 
-# Config package repositories
-- name: "Set repo proxy for installing package"
-  include_tasks: ../utils/set_proxy.yml
-
-- name: "Disable all existing repositories"
-  include_tasks: ../utils/enable_disable_repo.yml
-  vars:
-    repo_op: "disable"
-    repo_op_ignore_errors: true
-  when: >-
-    guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
-    guest_os_family == 'Suse'
-
-- name: "Add a local repo from ISO image for {{ vm_guest_os_distribution }}"
-  include_tasks: ../utils/add_local_dvd_repo.yml
-  when: guest_os_family in ['Suse', 'RedHat']
-
-- name: "Add guest OS official online repos for {{ vm_guest_os_distribution }}"
-  include_tasks: ../utils/add_official_online_repo.yml
-  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
-
-- name: "Update cached repo metadata"
-  include_tasks: ../utils/repo_update.yml
-
 # 'python3-libdnf5' is required by dnf5 module
 - name: "Install 'python3-libdnf5' on {{ guest_os_ansible_distribution }}"
   include_tasks: ../utils/install_uninstall_package.yml

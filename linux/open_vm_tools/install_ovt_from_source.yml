@@ -34,7 +34,7 @@
     ovt_configure_options: "{{ ovt_configure_options | union(['--without-x']) }}"
   when:
     - guest_os_ansible_system == 'linux'
-    - ovt_dependencies | select('search', 'gtk[^0-9]*3') | length == 0
+    - ovt_dependencies | select('search', 'gtk[^0-9]*3') | length < 2
 
 - name: "Check open-vm-tools dependencies are not empty"
   ansible.builtin.assert:

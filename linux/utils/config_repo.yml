@@ -1,0 +1,71 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Config package repositories for OS release
+# Parameter:
+#   config_rhel_online_repos: whether to config online repositories on RHEL
+#     with online repositories for AlmaLinux or CentOS stream.
+#     Default value is false. 
+#
+- name: "Set repo proxy for installing package"
+  include_tasks: ../utils/set_proxy.yml
+
+- name: "Disable all existing repositories"
+  include_tasks: ../utils/enable_disable_repo.yml
+  vars:
+    repo_op: "disable"
+    repo_op_ignore_errors: true
+  when: >-
+    guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
+    guest_os_family == 'Suse'
+
+- name: "Add a local repo from ISO image for {{ vm_guest_os_distribution }}"
+  include_tasks: ../utils/add_local_dvd_repo.yml
+  when: guest_os_family in ['Suse', 'RedHat']
+
+- name: "Add guest OS official online repos for {{ vm_guest_os_distribution }}"
+  include_tasks: ../utils/add_official_online_repo.yml
+  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
+
+# RHEL ISO is lack of many deveopment packages. If any of them is required in our testing,
+# We will install the package from ALmaLinux or CentOS stream repo 
+- name: "Config online repositories for {{ vm_guest_os_distribution }}"
+  when:
+    - guest_os_ansible_distribution == "RHEL"
+    - config_rhel_online_repos | default(false)
+  block:
+    - name: "Add CentOS {{ guest_os_ansible_distribution_ver }} online repo for RHEL {{ guest_os_ansible_distribution_ver }}"
+      include_tasks: ../utils/add_official_online_repo.yml
+      vars:
+        guest_os_ansible_distribution: "CentOS"
+      when: guest_os_ansible_distribution_ver is version('8.5', '<=')
+
+    - name: "Add online repositories for {{ vm_guest_os_distribution }}"
+      when: guest_os_ansible_distribution_ver is version('8.5', '>')
+      block:
+        - name: "Check AlmaLinux {{ guest_os_ansible_distribution_ver }} online repository"
+          ansible.builtin.uri:
+            url: "https://repo.almalinux.org/almalinux/{{ guest_os_ansible_distribution_ver }}"
+            follow_redirects: "safe"
+            method: "HEAD"
+          ignore_errors: true
+          register: check_almalinux_repo
+
+        - name: "Add AlmaLinux {{ guest_os_ansible_distribution_ver }} online repo for RHEL {{ guest_os_ansible_distribution_ver }}"
+          include_tasks: ../utils/add_official_online_repo.yml
+          vars:
+            guest_os_ansible_distribution: "AlmaLinux"
+          when:
+            - check_almalinux_repo.status is defined
+            - check_almalinux_repo.status == 200
+
+        - name: "Add CentOS {{ guest_os_ansible_distribution_ver }} online repo for RHEL {{ guest_os_ansible_distribution_ver }}"
+          include_tasks: ../utils/add_official_online_repo.yml
+          vars:
+            guest_os_ansible_distribution: "CentOS"
+          when: >-
+            check_almalinux_repo.status is undefined or
+            check_almalinux_repo.status != 200
+
+- name: "Update packages metadata"
+  include_tasks: ../utils/repo_update.yml
