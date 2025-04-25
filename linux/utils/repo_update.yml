@@ -22,7 +22,7 @@
     check_update_cmd: "{{ package_mgr_cmd }} check-update"
     clean_cache_cmd: "{{ package_mgr_cmd }} clean all"
   vars:
-    package_mgr_cmd: "{{ guest_os_ansible_pkg_mgr == 'yum') | ternary('yum', 'dnf') }}"
+    package_mgr_cmd: "{{ guest_os_ansible_pkg_mgr == 'yum' | ternary('yum', 'dnf') }}"
   when:
     - guest_os_family == "RedHat"
     - guest_os_ansible_pkg_mgr is match('yum|dnf')
