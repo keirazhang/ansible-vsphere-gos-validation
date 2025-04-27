@@ -37,7 +37,10 @@ dependencies:
   - libXrender-devel
   - libXtst-devel
 {% if guest_os_ansible_distribution_major_ver | int < 16 %}
+  - libdnet-devel
   - xorg-x11-devel
+{% else %}
+  - libvmtools-devel
 {% endif %}
 
   # XML related dependencies
