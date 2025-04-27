@@ -20,7 +20,7 @@
     package_state: "latest"
   when: guest_os_ansible_pkg_mgr == 'dnf5'
 
-# Install python3-rpm on RedHat family OS and VMware Photon OS
+# Install python3-rpm on RedHat family OS
 - name: "Install 'python3-rpm' on {{ guest_os_ansible_distribution }}"
   include_tasks: ../utils/install_uninstall_package.yml
   vars:
@@ -29,6 +29,7 @@
   when:
     - guest_os_python_version is version('3.0.0', '>=')
     - guest_os_ansible_pkg_mgr is search('yum|dnf')
+    - guest_os_ansible_distribution != "VMware Photon OS"
 
 # Install Python3 RPM library on SUSE 16
 - name: "Install Python3 RPM library on {{ guest_os_ansible_distribution }}"
@@ -57,10 +58,18 @@
     - name: "Disable DNSSEC and DNSOverTLS settings for VMware Photon OS"
       include_tasks: ../utils/set_dns.yml
 
+    - name: "Set fact of required packages on VMware Photon OS"
+      ansible.builtin.set_fact:
+        photon_required_packages:
+          - "{{ (guest_os_python_version is version('3.0.0', '>=')) | ternary('python3-rpm', '') }}"
+          - "sudo"
+          - "gawk"
+          - "tar"
+
     - name: "Install 'sudo', 'gawk', 'tar' on VMware Photon OS"
       include_tasks: ../utils/install_uninstall_package.yml
       vars:
-        package_list: ["sudo", "gawk", "tar"]
+        package_list: "{{ photon_required_packages | select }}"
         package_state: "latest"
 
 - name: "Reconfigure {{ guest_os_ansible_distribution }}"

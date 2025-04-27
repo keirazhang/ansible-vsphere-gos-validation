@@ -1,0 +1,46 @@
+# This file lists the dependent packages for building open-vm-tools source tarball on VMware Photon OS
+dependencies:
+  # Basic build tools
+  - autoconf
+  - automake
+  - gcc
+  - gcc-c++
+  - make
+  - pkg-config
+  - rpm-build
+
+  # Documentation
+  - doxygen
+
+  # Development libraries
+  - fuse-devel
+  - glib2-devel
+  - libdrm-devel
+  - libicu-devel
+  - libmspack-devel
+  - libtirpc-devel
+  - libtool
+  - libtool-ltdl-devel
+  - openssl-devel
+  - pam-devel
+  - procps-ng-devel
+  - systemd-devel
+  - valgrind-devel
+
+  # X11 related dependencies
+  - libX11-devel
+  - libXext-devel
+  - libXi-devel
+  - libXinerama-devel
+  - libXrandr-devel
+  - libXrender-devel
+  - libXtst-devel
+
+  # XML related dependencies
+  - libxml2-devel
+  - xmlsec1-devel
+  - xmlsec1-openssl-devel
+
+  # Additional tools
+  - rpcgen
+{%- endif %}

@@ -22,23 +22,21 @@
   include_tasks: ../utils/add_local_dvd_repo.yml
   when: guest_os_family in ['Suse', 'RedHat']
 
-- name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
-  include_tasks: ../utils/add_official_online_repo.yml
-  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
-
 # RHEL subscription is required to use RHEL online respositories. But it can be configured with AlamLinux or
 # CentOS online repositores to install packages which are not included in RHEL ISO image.
-- name: "Set fact whether to config online repositories for RHEL"
+- name: "Set fact of current guest OS distribution"
   ansible.builtin.set_fact:
-    config_rhel_online_repos: >-
-      {{
-        config_rhel_online_repos | default(false) and
-        guest_os_ansible_distribution == 'RedHat'
-      }}
+    current_guest_os_disstribution: "{{ guest_os_ansible_distribution }}"
 
 - name: "Config online repositories for {{ vm_guest_os_distribution }}"
-  when: config_rhel_online_repos
+  when:
+    - current_guest_os_disstribution == "Redhat"
+    - config_rhel_online_repos | default(false)
   block:
+    - name: "Set fact of default RHEL online repositories source to CentOS"
+      ansible.builtin.set_fact:
+        rhel_online_repo_source: "CentOS"
+
     - name: "Check whether AlmaLinux online repositories are usable"
       when: guest_os_ansible_distribution_ver is version('8.5', '>')
       block:
@@ -55,18 +53,21 @@
           debug: var=check_almalinux_repo
           when: enable_debug
 
-    - name: "Set fact of RHEL online repositories source"
-      ansible.builtin.set_fact:
-        rhel_online_repo_source: >-
-          {{
-            (check_almalinux_repo.status is defined and check_almalinux_repo.status == 200) |
-            ternary('AlmaLinux', 'CentOS')
-          }}
+        - name: "Set fact of RHEL online repositories source"
+          ansible.builtin.set_fact:
+            rhel_online_repo_source: "AlmaLinux"
+          when:
+            - check_almalinux_repo.status is defined
+            - check_almalinux_repo.status == 200
 
-    - name: "Add {{ rhel_online_repo_source }} online repositories for RHEL {{ guest_os_ansible_distribution_ver }}"
+    - name: "Add online repositories for RHEL {{ guest_os_ansible_distribution_ver }}"
       include_tasks: ../utils/add_official_online_repo.yml
       vars:
         guest_os_ansible_distribution: "{{ rhel_online_repo_source }}"
+
+- name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
+  include_tasks: ../utils/add_official_online_repo.yml
+  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux']
 
 - name: "Update packages metadata"
   include_tasks: ../utils/repo_update.yml
