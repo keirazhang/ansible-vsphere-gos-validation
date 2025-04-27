@@ -10,6 +10,7 @@
       ansible.builtin.shell: "grep -rGl 'mirror\\(list\\)\\?.centos.org' /etc/yum.repos.d/"
       ignore_errors: true
       delegate_to: "{{ vm_guest_ip }}"
+      no_log: true
       register: list_centos_repos
 
     - name: "Display repositories which use CentOS mirrors"
@@ -53,13 +54,15 @@
           - 'AppStream'
           - "{{ (guest_os_ansible_distribution_major_ver | int == 8) | ternary('PowerTools', 'CRB') }}"
 
-    - name: "Enable existing online repos"
+    # If RHEL is adding AlmaLinux or CentOS online repositories, it doesn't need to enable existing online repositories
+    - name: "Enable existing online repositories for {{ guest_os_ansible_distribution }}"
       include_tasks: enable_disable_repo.yml
       vars:
         repo_name: "{{ item | lower }}"
         repo_op: "enable"
         repo_op_ignore_errors: true
       with_items: "{{ guest_online_repo_ids }}"
+      when: not (guest_os_release.ID | lower == 'rhel' and guest_os_ansible_distribution != 'RedHat')
 
     - name: "Set online repositories for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
@@ -123,7 +126,7 @@
   vars:
     repo_name: "{{ online_repo.name }}"
     repo_baseurl: "{{ online_repo.baseurl }}"
-    gpg_check: "{{ guest_os_family == 'RedHat' }}"
+    gpg_check: false
   with_list: "{{ online_repos }}"
   loop_control:
     loop_var: "online_repo"

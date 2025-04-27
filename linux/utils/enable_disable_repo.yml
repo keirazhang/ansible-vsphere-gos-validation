@@ -22,7 +22,7 @@
   block:
     - name: "Set fact of repository state"
       ansible.builtin.set_fact:
-        repo_state: "{{ repo_op == 'enable' | ternary(1, 0) }}"
+        repo_state: "{{ (repo_op == 'enable') | ternary(1, 0) }}"
     
     - name: "Disable all yum repositories for {{ guest_os_ansible_distribution }}"
       ansible.builtin.shell: "sed -i 's/enabled *= *1/enabled={{ repo_state }}/' /etc/yum.repos.d/*.repo"
@@ -61,7 +61,7 @@
       block:
         - name: "Set fact of repository state"
           ansible.builtin.set_fact:
-            repo_state: "{{ repo_op == 'enable' | ternary(1, 0) }}"
+            repo_state: "{{ (repo_op == 'enable') | ternary(1, 0) }}"
 
         - name: "{{ repo_op | capitalize }} yum repository {{ repo_name }}"
           ansible.builtin.shell: "grep -l '\\[{{ repo_name }}\\]' /etc/yum.repos.d/*.repo | xargs sed -i 's/enabled *= *1/enabled={{ repo_state }}/'"
