@@ -115,14 +115,14 @@
     - name: "Config OS package repositories"
       include_tasks: ../utils/config_repo.yml
       vars:
-        config_rhel_online_repos: true
+        config_rhel_online_repos: "{{ guest_os_ansible_distribution == 'RedHat' }}"
     
     - name: "Add user defined online repository for installing open-vm-tools packages"
       when:
         - linux_ovt_repo_url is defined
         - linux_ovt_repo_url
       block:
-        - name: "Add an extra open-vm-tools repository from URL"
+        - name: "Add a user defined open-vm-tools repository from URL"
           include_tasks: ../utils/add_extra_online_repo.yml
           vars:
             extra_repo_name: "open-vm-tools-repo"
