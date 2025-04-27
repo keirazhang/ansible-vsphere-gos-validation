@@ -48,10 +48,10 @@
           {%- elif guest_os_ansible_distribution_ver is version('8.5', '>') -%}http://mirror.stream.centos.org/$releasever-stream
           {%- else -%}http://vault.centos.org/$contentdir/$releasever
           {%- endif -%}
-        guest_online_repo_ids: |-
-          {%- if guest_os_ansible_distribution_major_ver | int == 8 -%}['BaseOS', 'AppStream', 'PowerTools']
-          {%- else -%}['BaseOS', 'AppStream', 'CRB']
-          {%- endif -%}
+        guest_online_repo_ids:
+          - 'BaseOS'
+          - 'AppStream'
+          - "{{ (guest_os_ansible_distribution_major_ver | int == 8) | ternary('PowerTools', 'CRB') }}"
 
     - name: "Enable existing online repos"
       include_tasks: enable_disable_repo.yml

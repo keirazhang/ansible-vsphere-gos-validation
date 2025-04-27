@@ -17,9 +17,9 @@
       - (repo_baseurl is defined and repo_baseurl) or (repo_mirrorlist is defined and repo_mirrorlist)
     fail_msg: >-
       Parameters 'repo_name', and 'repo_baseurl' or 'repo_mirrorlist' must be set for adding repository.
-      At present, repo_name={{ repo_name | default('undefined') }},
-      repo_baseurl={{ repo_baseurl | default('undefined') }},
-      repo_mirrorlist={{ repo_mirrorlist | default('undefined') }}
+      But now, repo_name is "{{ repo_name | default('undefined') }}",
+      repo_baseurl is "{{ repo_baseurl | default('undefined') }}",
+      repo_mirrorlist is "{{ repo_mirrorlist | default('undefined') }}"
 
 - name: "Set default RPM GPG key"
   when:

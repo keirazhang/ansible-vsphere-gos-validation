@@ -31,7 +31,7 @@
 # We will install the package from ALmaLinux or CentOS stream repo 
 - name: "Config online repositories for {{ vm_guest_os_distribution }}"
   when:
-    - guest_os_ansible_distribution == "RHEL"
+    - guest_os_ansible_distribution == "RedHat"
     - config_rhel_online_repos | default(false)
   block:
     - name: "Add CentOS {{ guest_os_ansible_distribution_ver }} online repo for RHEL {{ guest_os_ansible_distribution_ver }}"
