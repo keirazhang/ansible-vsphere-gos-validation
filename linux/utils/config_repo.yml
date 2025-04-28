@@ -2,9 +2,6 @@
 # SPDX-License-Identifier: BSD-2-Clause
 ---
 # Config package repositories for OS release
-# Parameter:
-#   config_rhel_online_repos: Whether to config online repositories on RHEL with
-#     AlmaLinux or CentOS online repositories. Default value is false.
 #
 - name: "Set repositories proxy for installing package"
   include_tasks: ../utils/set_proxy.yml
@@ -21,49 +18,6 @@
 - name: "Add local repositories from ISO image for {{ vm_guest_os_distribution }}"
   include_tasks: ../utils/add_local_dvd_repo.yml
   when: guest_os_family in ['Suse', 'RedHat']
-
-# RHEL subscription is required to use RHEL online respositories. But it can be configured with AlamLinux or
-# CentOS online repositores to install packages which are not included in RHEL ISO image.
-- name: "Set fact of current guest OS distribution"
-  ansible.builtin.set_fact:
-    current_guest_os_disstribution: "{{ guest_os_ansible_distribution }}"
-
-- name: "Config online repositories for {{ vm_guest_os_distribution }}"
-  when:
-    - current_guest_os_disstribution == "Redhat"
-    - config_rhel_online_repos | default(false)
-  block:
-    - name: "Set fact of default RHEL online repositories source to CentOS"
-      ansible.builtin.set_fact:
-        rhel_online_repo_source: "CentOS"
-
-    - name: "Check whether AlmaLinux online repositories are usable"
-      when: guest_os_ansible_distribution_ver is version('8.5', '>')
-      block:
-        - name: "Check AlmaLinux {{ guest_os_ansible_distribution_ver }} online repository"
-          ansible.builtin.uri:
-            url: "https://repo.almalinux.org/almalinux/{{ guest_os_ansible_distribution_ver }}"
-            follow_redirects: "safe"
-            method: "HEAD"
-          ignore_errors: true
-          register: check_almalinux_repo
-          no_log: true
-
-        - name: "Display the result of checking AlmaLinux {{ guest_os_ansible_distribution_ver }} online repository"
-          debug: var=check_almalinux_repo
-          when: enable_debug
-
-        - name: "Set fact of RHEL online repositories source"
-          ansible.builtin.set_fact:
-            rhel_online_repo_source: "AlmaLinux"
-          when:
-            - check_almalinux_repo.status is defined
-            - check_almalinux_repo.status == 200
-
-    - name: "Add online repositories for RHEL {{ guest_os_ansible_distribution_ver }}"
-      include_tasks: ../utils/add_official_online_repo.yml
-      vars:
-        guest_os_ansible_distribution: "{{ rhel_online_repo_source }}"
 
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: ../utils/add_official_online_repo.yml

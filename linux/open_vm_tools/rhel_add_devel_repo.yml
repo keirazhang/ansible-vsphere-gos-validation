@@ -1,0 +1,65 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# To install development packages on RHEL, we can use AlmaLinux or CentOS online repository
+#
+- name: "Initialize the fact of RHEL development packages repository name and base URL"
+  ansible.builtin.set_fact:
+    rhel_devel_repo_id: "{{ (guest_os_ansible_distribution_major_ver | int >= 9) | ternary('CRB', 'PowerTools') }}"
+    rhel_devel_repo_name: ""
+    rhel_devel_repo_baseurl: ""
+
+- name: "Set fact of development packages repository for RHEL {{ guest_os_ansible_distribution_ver }}"
+  ansible.builtin.set_fact:
+    rhel_devel_repo_name: "CentOS_{{ guest_os_ansible_distribution_ver }}_{{ rhel_devel_repo_id }}"
+    rhel_devel_repo_baseurl: "http://vault.centos.org/$contentdir/$releasever/{{ rhel_devel_repo_id }}/$basearch/os"
+  when:
+    - guest_os_ansible_distribution_ver is version("8.0", ">=")
+    - guest_os_ansible_distribution_ver is version("8.5", "<=")
+
+- name: "Set development packages repository for RHEL {{ guest_os_ansible_distribution_ver }}"
+  when: guest_os_ansible_distribution_ver is version('8.5', '>')
+  block:
+    - name: "Set fact of RHEL development packages repository options"
+      ansible.builtin.set_fact:
+        rhel_devel_repo_options: {"AlmaLinux": "https://repo.almalinux.org/almalinux/{{ guest_os_ansible_distribution_ver }}",
+                                  "CentOS": "https://mirror.stream.centos.org/{{ guest_os_ansible_distribution_major_ver }}-stream"}
+        rhel_devel_repo_usable: []
+
+    - name: "Check AlmaLinux and CentOS {{ guest_os_ansible_distribution_ver }} online repository"
+      ansible.builtin.uri:
+        url: "{{ item.value }}"
+        follow_redirects: "safe"
+        method: "HEAD"
+      ignore_errors: true
+      register: check_online_repos
+      no_log: true
+      with_dict: "{{ rhel_devel_repo_options }}"
+
+    - name: "Display the result of checking AlmaLinux and CentOS online repository"
+      ansible.builtin.debug: var=check_online_repos
+      when: enable_debug
+
+    - name: "Set fact of online repository can be used by RHEL {{ guest_os_ansible_distribution_ver }}"
+      ansible.builtin.set_fact:
+        rhel_devel_repo_usable: "{{ check_online_repos.results | selectattr('status', 'equalto', 200) }}"
+      when:
+        - check_online_repos.results is defined
+        - check_online_repos.results | length > 0
+
+    - name: "Set fact of development packages repository for RHEL {{ guest_os_ansible_distribution_ver }}"
+      ansible.builtin.set_fact:
+        rhel_devel_repo_name: "{{ repo_dict.key }}_{{ guest_os_ansible_distribution_ver }}_{{ rhel_devel_repo_id }}"
+        rhel_devel_repo_baseurl: "{{ repo_dict.value }}/{{ rhel_devel_repo_id }}/$basearch/os/"
+      vars:
+        repo_dict: "{{ rhel_devel_repo_usable | map(attribute='item') | first }}"
+      when: rhel_devel_repo_usable | length > 0
+
+- name: "Add RHEL development packages repository"
+  include_tasks: ../utils/add_extra_online_repo.yml
+  vars:
+    extra_repo_name: "{{ rhel_devel_repo_name }}"
+    extra_repo_baseurl: "{{ rhel_devel_repo_baseurl }}"
+  when:
+    - rhel_devel_repo_name
+    - rhel_devel_repo_baseurl

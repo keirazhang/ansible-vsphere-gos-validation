@@ -74,6 +74,8 @@
 
 # ProLinux online repos are not accessible, which leads to missing dependencies.
 # So it is not supported to test open-vm-tools source install
+# RHEL 7.9 has reached EOM on June 30, 2024, we will not support testing open-vm-tools
+# source install either.
 - name: "Skip test case for {{ guest_os_ansible_distribution }}"
   include_tasks: ../../common/skip_test_case.yml
   vars:
@@ -83,7 +85,9 @@
     skip_reason: "Not Supported"
   when:
     - linux_ovt_install_type == "source"
-    - guest_os_ansible_distribution == 'ProLinux'
+    - (guest_os_ansible_distribution == 'ProLinux' or
+       (guest_os_ansible_distribution == 'RedHat' and
+        guest_os_ansible_distribution_major_ver | int < 8))
 
 - name: "Initialize fact whether to uninstall open-vm-tools"
   ansible.builtin.set_fact:
