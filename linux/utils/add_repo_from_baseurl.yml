@@ -14,11 +14,10 @@
   ansible.builtin.assert:
     that:
       - repo_name is defined and repo_name
-      - (repo_baseurl is defined and repo_baseurl) or (repo_mirrorlist is defined and repo_mirrorlist)
+      - repo_baseurl is defined and repo_baseurl
     fail_msg: >-
       Invalid parameters: repo_name is {{ repo_name | default('undefined') }},
-      repo_baseurl is {{ repo_baseurl | default('undefined') }},
-      repo_mirrorlist is {{ repo_mirrorlist | default('undefined') }}
+      repo_baseurl is {{ repo_baseurl | default('undefined') }}
 
 - name: "Set default RPM GPG key"
   when:
@@ -46,7 +45,6 @@
       ansible.builtin.set_fact:
         repo_baseurl: "file://{{ repo_baseurl }}"
       when:
-        - repo_baseurl is defined
         - repo_baseurl is sequence
         - repo_baseurl[0] == '/'
 
@@ -87,7 +85,6 @@
       ansible.builtin.set_fact:
         repo_baseurl: "dir:{{ repo_baseurl }}"
       when:
-        - repo_baseurl is defined
         - repo_baseurl is sequence
         - repo_baseurl[0] == '/'
 
