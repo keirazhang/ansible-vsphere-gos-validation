@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 ---
 # Add official online package repository
+#
 - name: "Set online repositories for CentOS"
   when: guest_os_ansible_distribution == "CentOS"
   block:
@@ -9,6 +10,7 @@
       ansible.builtin.shell: "grep -rGl 'mirror\\(list\\)\\?.centos.org' /etc/yum.repos.d/"
       ignore_errors: true
       delegate_to: "{{ vm_guest_ip }}"
+      no_log: true
       register: list_centos_repos
 
     - name: "Display repositories which use CentOS mirrors"
@@ -34,38 +36,41 @@
             baseurl: "http://vault.centos.org/$contentdir/$releasever/os/$basearch"
       when: guest_os_ansible_distribution_major_ver | int < 8
 
-    - name: "Set online repositories for CentOS {{ guest_os_ansible_distribution_ver }}"
+- name: "Set online repositories for {{ vm_guest_os_distribution }}"
+  when:
+    - guest_os_ansible_distribution in ["AlmaLinux", "Rocky", "CentOS"]
+    - guest_os_ansible_distribution_major_ver | int >= 8
+  block:
+    - name: "Set facts about guest OS online repositories"
       ansible.builtin.set_fact:
-        online_repos:
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_BaseOS"
-            baseurl: "http://vault.centos.org/$contentdir/$releasever/BaseOS/$basearch/os/"
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_AppStrem"
-            baseurl: "http://vault.centos.org/$contentdir/$releasever/AppStream/$basearch/os/"
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_PowerTools"
-            baseurl: "http://vault.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/"
-      when: guest_os_ansible_distribution_major_ver | int == 8
+        guest_online_repo_url: |-
+          {%- if guest_os_ansible_distribution == "AlmaLinux" -%}https://repo.almalinux.org/almalinux/$releasever
+          {%- elif guest_os_ansible_distribution == "Rocky" -%}http://dl.rockylinux.org/$contentdir/$releasever
+          {%- elif guest_os_ansible_distribution_ver is version('8.5', '>') -%}http://mirror.stream.centos.org/$releasever-stream
+          {%- else -%}http://vault.centos.org/$contentdir/$releasever
+          {%- endif -%}
+        guest_online_repo_ids:
+          - 'BaseOS'
+          - 'AppStream'
+          - "{{ (guest_os_ansible_distribution_major_ver | int == 8) | ternary('PowerTools', 'CRB') }}"
 
-    - name: "Set online repositories for CentOS {{ guest_os_ansible_distribution_ver }}"
+    # In case there are pre-configured online repositories which can be used
+    - name: "Enable existing online repositories for {{ guest_os_ansible_distribution }}"
+      include_tasks: enable_disable_repo.yml
+      vars:
+        repo_name: "{{ item | lower }}"
+        repo_op: "enable"
+        repo_op_ignore_errors: true
+      with_items: "{{ guest_online_repo_ids }}"
+
+    - name: "Set online repositories for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
-        online_repos:
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_BaseOS"
-            baseurl: "http://mirror.stream.centos.org/$releasever-stream/BaseOS/$basearch/os/"
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_AppStrem"
-            baseurl: "http://mirror.stream.centos.org/$releasever-stream/AppStream/$basearch/os/"
-          - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_PowerTools"
-            baseurl: "http://mirror.stream.centos.org/$releasever-stream/CRB/$basearch/os/"
-      when: guest_os_ansible_distribution_major_ver | int >= 9
-
-- name: "Set online repositories for Rocky Linux {{ guest_os_ansible_distribution_ver }}"
-  ansible.builtin.set_fact:
-    online_repos:
-      - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_BaseOS"
-        baseurl: "http://mirror.rockylinux.org/$contentdir/$releasever/BaseOS/$basearch/os/"
-      - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_AppStrem"
-        baseurl: "http://mirror.rockylinux.org/$contentdir/$releasever/AppStream/$basearch/os/"
-      - name: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}_PowerTools"
-        baseurl: "http://mirror.rockylinux.org/$contentdir/$releasever/PowerTools/$basearch/os/"
-  when: guest_os_ansible_distribution == "Rocky"
+        online_repos: "{{ online_repos | default([]) | union([{'name': repo_name, 'baseurl': repo_baseurl}]) }}"
+      vars:
+        repo_prefix: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}"
+        repo_name: "{{ repo_prefix }}_{{ item }}"
+        repo_baseurl: "{{ guest_online_repo_url }}/{{ item }}/$basearch/os/"
+      with_items: "{{ guest_online_repo_ids }}"
 
 - name: "Set online repositories for Oracle Linux"
   when: guest_os_ansible_distribution == "OracleLinux"
@@ -124,8 +129,9 @@
   with_list: "{{ online_repos }}"
   loop_control:
     loop_var: "online_repo"
-  when: guest_os_ansible_distribution in ["CentOS", "Rocky", "OracleLinux",
-                                          "ProLinux", "openSUSE Leap"]
+  when:
+    - online_repos is defined
+    - online_repos | length > 0
 
 - name: "Set APT sources list for {{ guest_os_ansible_distribution }}"
   when: guest_os_family == "Debian"
@@ -214,9 +220,7 @@
       with_items: "{{ photon_online_repos }}"
 
     - name: "Update baseurl to repositories on https://packages.vmware.com/photon"
-      block:
-        - name: "Update repo's baseurl"
-          ansible.builtin.command: "sed -i 's#dl.bintray.com/vmware/#packages.vmware.com/photon/$releasever/#' /etc/yum.repos.d/{{ item }}.repo"
-          delegate_to: "{{ vm_guest_ip }}"
-          with_items: "{{ photon_online_repos }}"
+      ansible.builtin.command: "sed -i 's#dl.bintray.com/vmware/#packages.vmware.com/photon/$releasever/#' /etc/yum.repos.d/{{ item }}.repo"
+      delegate_to: "{{ vm_guest_ip }}"
+      with_items: "{{ photon_online_repos }}"
       when: guest_os_ansible_distribution_major_ver | int < 4

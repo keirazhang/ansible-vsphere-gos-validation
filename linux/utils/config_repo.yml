@@ -1,0 +1,29 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Config package repositories for guest OS release
+#
+# VMware Photon OS needs to disable DNSSEC and DNSOverTLS while connecting online repo
+- name: "Disable DNSSEC and DNSOverTLS settings for VMware Photon OS"
+  include_tasks: set_dns.yml
+  when: guest_os_ansible_distribution == "VMware Photon OS"
+
+- name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
+  include_tasks: enable_disable_repo.yml
+  vars:
+    repo_op: "disable"
+    repo_op_ignore_errors: true
+  when: >-
+    guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
+    guest_os_family == 'Suse'
+
+- name: "Add local repositories from ISO image for {{ vm_guest_os_distribution }}"
+  include_tasks: add_local_dvd_repo.yml
+  when: guest_os_family in ['Suse', 'RedHat']
+
+- name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
+  include_tasks: add_official_online_repo.yml
+  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
+
+- name: "Update packages metadata"
+  include_tasks: repo_update.yml

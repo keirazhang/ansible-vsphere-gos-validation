@@ -1,0 +1,75 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Enable or disable one or all package reposiotories
+# Parameter
+#   repo_op: The operation to be performed: enable or disable
+#   repo_name: The repository name to enable or disable.
+#     If it is not set, all repositories will be enabled or disabled.
+#   repo_op_ignore_errors(Optional): Whether to ignore errors when enabling or disabling repositories.
+#     The default value is false.
+#
+- name: "Check repo_op is set"
+  ansible.builtin.assert:
+    that:
+      - repo_op is defined
+      - repo_op in ['enable', 'disable']
+    fail_msg: "Parameter 'repo_op' must be set as enable or disable"
+
+- name: "{{ repo_op | capitalize }} all repositories"
+  when: repo_name is undefined or not repo_name
+  block:
+    - name: "Set fact of repository state"
+      ansible.builtin.set_fact:
+        repo_state: "{{ (repo_op == 'enable') | ternary(1, 0) }}"
+    
+    - name: "Disable all yum repositories for {{ guest_os_ansible_distribution }}"
+      ansible.builtin.shell: "sed -i 's/enabled *= *1/enabled={{ repo_state }}/' /etc/yum.repos.d/*.repo"
+      delegate_to: "{{ vm_guest_ip }}"
+      ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+      when: guest_os_family in ['RedHat', 'VMware Photon OS']
+
+    - name: "Disable all zypper repositories for {{ guest_os_ansible_distribution }"
+      ansible.builtin.shell: "sed -i 's/enabled *= *1/enabled={{ repo_state }}/' /etc/zypp/repos.d/*.repo"
+      delegate_to: "{{ vm_guest_ip }}"
+      ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+      when: guest_os_family == "Suse"
+
+- name: "{{ repo_op | capitalize }} repository {{ repo_name }}"
+  when: repo_name is defined and repo_name
+  block:
+    # RHEL-like OS
+    - name: "{{ repo_op | capitalize }} repository {{ repo_name }} for {{ guest_os_ansible_distribution }}"
+      when: guest_os_family == 'RedHat'
+      block:
+        - name: "{{ repo_op | capitalize }} yum repository {{ repo_name }} for {{ vm_guest_os_distribution }}"
+          ansible.builtin.command: "yum-config-manager --{{ repo_op }} {{ repo_name }}"
+          delegate_to: "{{ vm_guest_ip }}"
+          ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+          when: guest_os_ansible_pkg_mgr == "yum"
+
+        - name: "{{ repo_op | capitalize }} dnf repository {{ repo_name }} for {{ vm_guest_os_distribution }}"
+          ansible.builtin.command: "dnf config-manager --set-{{ repo_op }}d {{ repo_name }}"
+          delegate_to: "{{ vm_guest_ip }}"
+          ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+          when: guest_os_ansible_pkg_mgr in ["dnf", "dnf5"]
+
+    # VMware Photon OS
+    - name: "{{ repo_op | capitalize }} yum repository {{ repo_name }} for {{ vm_guest_os_distribution }}"
+      when: guest_os_ansible_distribution == 'VMware Photon OS'
+      block:
+        - name: "Set fact of repository state"
+          ansible.builtin.set_fact:
+            repo_state: "{{ (repo_op == 'enable') | ternary(1, 0) }}"
+
+        - name: "{{ repo_op | capitalize }} yum repository {{ repo_name }}"
+          ansible.builtin.shell: "grep -l '\\[{{ repo_name }}\\]' /etc/yum.repos.d/*.repo | xargs sed -i 's/enabled *= *1/enabled={{ repo_state }}/'"
+          ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+          delegate_to: "{{ vm_guest_ip }}"
+
+    # SUSE
+    - name: "{{ repo_op | capitalize }} zypper repository {{ repo_name }} for {{ vm_guest_os_distribution }}"
+      ansible.builtin.command: "zypper mr -{{ repo_op[0] }} {{ repo_name }}"
+      delegate_to: "{{ vm_guest_ip }}"
+      ignore_errors: "{{ repo_op_ignore_errors | default(omit) }}"
+      when: guest_os_family == "Suse"
