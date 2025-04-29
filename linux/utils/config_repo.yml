@@ -9,7 +9,7 @@
     repo_state: "disabled"
     repo_state_ignore_errors: true
   when: >-
-    guest_os_ansible_distribution in ['RedHat', 'ProLinux', 'VMware Photon OS'] or
+    guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
     guest_os_family == 'Suse'
 
 # Local repositories might be invalid after VM reboot, so we will always configure them
