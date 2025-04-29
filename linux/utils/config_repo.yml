@@ -17,12 +17,19 @@
     guest_os_ansible_distribution in ['RedHat', 'ProLinux', 'VMware Photon OS'] or
     guest_os_family == 'Suse'
 
-- name: "Add local repositories from ISO image for {{ vm_guest_os_distribution }}"
-  include_tasks: add_local_dvd_repo.yml
+- name: "Connect CDROM and add local repositories for {{ vm_guest_os_distribution }}"
   when:
     - guest_os_family in ['Suse', 'RedHat']
     - os_installation_iso_list is defined
     - os_installation_iso_list | length > 0
+  block:
+    - name: "Connect and mount CDROM in guest OS"
+      include_tasks: connect_and_mount_cdrom.yml
+
+    - name: "Add local repositories from ISO image for {{ vm_guest_os_distribution }}"
+      include_tasks: add_local_dvd_repo.yml
+      vars:
+        dvd_mount_path: "{{ guest_cdrom_mount_path }}"
 
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_official_online_repo.yml
