@@ -59,8 +59,8 @@
       include_tasks: enable_disable_repo.yml
       vars:
         repo_name: "{{ item | lower }}"
-        repo_op: "enable"
-        repo_op_ignore_errors: true
+        repo_state: "enabled"
+        repo_state_ignore_errors: true
       with_items: "{{ guest_online_repo_ids }}"
 
     - name: "Set online repositories for {{ vm_guest_os_distribution }}"

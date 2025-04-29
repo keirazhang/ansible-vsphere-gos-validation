@@ -114,6 +114,7 @@
 - name: "Add user defined open-vm-tools repository"
   when:
     - guest_os_ansible_system == "linux"
+    - linux_ovt_install_type == "package"
     - linux_ovt_repo_url is defined
     - linux_ovt_repo_url
   block:
