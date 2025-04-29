@@ -110,8 +110,8 @@
     - name: "Uninstall open-vm-tools packages"
       include_tasks: uninstall_ovt.yml
 
-    - name: "Connect and mount CDROM after reboot"
-      include_tasks: ../utils/connect_and_mount_cdrom.yml
+- name: "Configure packages repositories"
+  include_tasks: ../utils/config_repo.yml
 
 # Add an extra online repository for install not-bundled open-vm-tools
 - name: "Add user defined open-vm-tools repository"

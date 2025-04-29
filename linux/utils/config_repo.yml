@@ -3,11 +3,6 @@
 ---
 # Config package repositories for guest OS release
 #
-# VMware Photon OS needs to disable DNSSEC and DNSOverTLS while connecting online repo
-- name: "Disable DNSSEC and DNSOverTLS settings for VMware Photon OS"
-  include_tasks: set_dns.yml
-  when: guest_os_ansible_distribution == "VMware Photon OS"
-
 - name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
   include_tasks: enable_disable_repo.yml
   vars:
@@ -18,18 +13,11 @@
     guest_os_family == 'Suse'
 
 - name: "Connect CDROM and add local repositories for {{ vm_guest_os_distribution }}"
+  include_tasks: add_local_dvd_repo.yml
   when:
     - guest_os_family in ['Suse', 'RedHat']
     - os_installation_iso_list is defined
     - os_installation_iso_list | length > 0
-  block:
-    - name: "Connect and mount CDROM in guest OS"
-      include_tasks: connect_and_mount_cdrom.yml
-
-    - name: "Add local repositories from ISO image for {{ vm_guest_os_distribution }}"
-      include_tasks: add_local_dvd_repo.yml
-      vars:
-        dvd_mount_path: "{{ guest_cdrom_mount_path }}"
 
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_official_online_repo.yml

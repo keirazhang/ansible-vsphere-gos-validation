@@ -21,27 +21,19 @@
   vars:
     package_list: ["python3-libdnf5"]
     package_state: "latest"
+    package_repo_enable: false
   when: guest_os_ansible_pkg_mgr == 'dnf5'
 
-# Install python3-rpm on RedHat family OS and VMware Photon OS
+# Install Python3 RPM library on RedHat and Suse family OS
 - name: "Install 'python3-rpm' on {{ guest_os_ansible_distribution }}"
-  include_tasks: ../utils/install_uninstall_package.yml
-  vars:
-    package_list: ["python3-rpm"]
-    package_state: "latest"
-  when:
-    - guest_os_python_version is version('3.0.0', '>=')
-    - guest_os_ansible_pkg_mgr is search('yum|dnf')
-
-# Install Python3 RPM library on SUSE 16
-- name: "Install Python3 RPM library on {{ guest_os_ansible_distribution }}"
   include_tasks: ../utils/install_uninstall_package.yml
   vars:
     package_list: ["python3*-rpm"]
     package_state: "latest"
+    package_repo_enable: false
   when:
-    - guest_os_family == "Suse"
-    - guest_os_ansible_distribution_major_ver | int == 16
+    - guest_os_python_version is version('3.0.0', '>=')
+    - guest_os_ansible_pkg_mgr is match('yum|dnf|zypper')
 
 - name: "Reconfigure VMware Photon OS"
   when: guest_os_ansible_distribution == "VMware Photon OS"
@@ -56,11 +48,24 @@
         - not new_vm
         - vmtools_is_running
 
+    # VMware Photon OS needs to disable DNSSEC and DNSOverTLS while connecting online repo
+    - name: "Disable DNSSEC and DNSOverTLS settings for VMware Photon OS"
+      include_tasks: set_dns.yml
+
+    - name: "Set fact of required packages on VMware Photon OS"
+      ansible.builtin.set_fact:
+        photon_required_packages:
+          - "{{ (guest_os_python_version is version('3.0.0', '>=')) | ternary('python3-rpm', '') }}"
+          - "sudo"
+          - "gawk"
+          - "tar"
+
     - name: "Install 'sudo', 'gawk', 'tar' on VMware Photon OS"
       include_tasks: ../utils/install_uninstall_package.yml
       vars:
-        package_list: ["sudo", "gawk", "tar"]
+        package_list: "{{ photon_required_packages | select }}"
         package_state: "latest"
+        package_repo_enable: false
 
 - name: "Reconfigure {{ guest_os_ansible_distribution }}"
   when:

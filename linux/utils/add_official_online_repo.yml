@@ -65,11 +65,11 @@
 
     - name: "Set online repositories for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:
-        online_repos: "{{ online_repos | default([]) | union([{'name': repo_name, 'baseurl': repo_baseurl}]) }}"
+        online_repos: "{{ online_repos | default([]) | union([{'name': online_repo_name, 'baseurl': online_repo_baseurl}]) }}"
       vars:
-        repo_prefix: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}"
-        repo_name: "{{ repo_prefix }}_{{ item }}"
-        repo_baseurl: "{{ guest_online_repo_url }}/{{ item }}/$basearch/os/"
+        online_repo_prefix: "{{ guest_os_ansible_distribution }}_{{ guest_os_ansible_distribution_ver }}"
+        online_repo_name: "{{ online_repo_prefix }}_{{ item }}"
+        online_repo_baseurl: "{{ guest_online_repo_url }}/{{ item }}/$basearch/os/"
       with_items: "{{ guest_online_repo_ids }}"
 
 - name: "Set online repositories for Oracle Linux"

@@ -52,7 +52,7 @@
       ansible.builtin.yum_repository:
         name: "{{ repo_name }}"
         description: "{{ repo_description | default(repo_name) }}"
-        baseurl: "{{ repo_baseurl | default(omit) }}"
+        baseurl: "{{ repo_baseurl }}"
         mirrorlist: "{{ repo_mirrorlist | default(omit) }}"
         enabled: true
         gpgcheck: "{{ gpg_check | default(false) }}"

@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: BSD-2-Clause
 ---
 #
+- name: "Eject CDROM device from guest OS"
+  include_tasks: ../utils/eject_cdrom_in_guest.yml
+  when:
+    - enable_local_dvd_repo is defined
+    - enable_local_dvd_repo | bool
+
 - name: "Reboot guest OS"
   include_tasks: ../utils/reboot.yml
 
