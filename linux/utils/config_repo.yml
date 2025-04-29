@@ -12,6 +12,8 @@
     guest_os_ansible_distribution in ['RedHat', 'ProLinux', 'VMware Photon OS'] or
     guest_os_family == 'Suse'
 
+# Local repositories might be invalid after VM reboot, so we will always configure them
+# at necessary
 - name: "Connect CDROM and add local repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_local_dvd_repo.yml
   when:
@@ -19,9 +21,13 @@
     - os_installation_iso_list is defined
     - os_installation_iso_list | length > 0
 
+# If online repositories have been configured before taking base snapshot
+# We don't need to configure them again
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_official_online_repo.yml
-  when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
+  when:
+    - guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
+    - guest_os_repos_enabled | default(false)
 
 - name: "Update packages metadata"
   include_tasks: repo_update.yml
