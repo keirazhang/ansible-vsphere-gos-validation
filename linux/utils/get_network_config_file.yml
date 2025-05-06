@@ -6,10 +6,12 @@
 #   network_adapter_name: The network interface name
 # Return:
 #   network_config_path: The network interface config file path
+#   network_connection_name: The network connection name managed by NetworkManager.
 #
 - name: "Initialize network config file for {{ network_adapter_name }}"
   ansible.builtin.set_fact:
     network_config_path: ""
+    network_connection_name: ""
 
 - name: "Get network device manager in guest OS"
   include_tasks: get_network_manager.yml
@@ -21,14 +23,17 @@
   when: guest_os_network_manager == "NetworkManager"
   block:
     - name: "Get network connections"
-      ansible.builtin.shell: "nmcli -t -f DEVICE,FILENAME connection show --active | grep '{{ network_adapter_name }}:'"
+      ansible.builtin.shell: "nmcli -t -f DEVICE,FILENAME,NAME connection show --active | grep '{{ network_adapter_name }}:'"
       delegate_to: "{{ vm_guest_ip }}"
       register: "network_conn_result"
       ignore_errors: true
 
     - name: "Set fact of network config file for '{{ network_adapter_name }}' on {{ guest_os_ansible_distribution }}"
       ansible.builtin.set_fact:
-        network_config_path: "{{ network_conn_result.stdout_lines[0].split(':')[1] }}"
+        network_config_path: "{{ splitted_items[1] }}"
+        network_connection_name: "{{ splitted_items[2] }}"
+      vars:
+        splitted_items: "{{ network_conn_result.stdout_lines[0].split(':') }}"
       when:
         - network_conn_result.rc is defined
         - network_conn_result.rc == 0

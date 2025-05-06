@@ -19,6 +19,11 @@
       ansible.builtin.set_fact:
         vm_portgroup_name: "{{ portgroup_name }}"
 
+    - name: "Set facts of new network adapter config for server VM"
+      ansible.builtin.set_fact:
+        new_nic_ipv4: "192.168.192.101"
+        new_nic_net_prefix: "24"
+
     - name: "Set fact of the new network adapter gateway"
       ansible.builtin.set_fact:
         new_nic_gateway: "{{ vlan_gateway }}"
