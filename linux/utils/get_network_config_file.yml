@@ -42,7 +42,7 @@
 # Set fact of network config file in guest OS except VMware Photon OS
 - name: "Set fact of network config file"
   when:
-    - guest_os_network_manager != "NetworkManager"
+    - guest_os_network_manager not in ["NetworkManager", "systemd-networkd"]
     - guest_os_ansible_distribution not in ["VMware Photon OS", "Astra Linux (Orel)"]
   block:
     - name: "Set fact of network config file for '{{ network_adapter_name }}' on {{ guest_os_ansible_distribution }}"
@@ -76,14 +76,13 @@
         network_config_path: "/etc/sysconfig/network/ifcfg-{{ network_adapter_name }}"
       when: guest_os_family == "Suse"
 
-    - name: "Set fact of network config file for '{{ network_adapter_name }}' on Flatcar"
-      ansible.builtin.set_fact:
-        network_config_path: "/etc/systemd/network/{{ network_adapter_name }}"
-      when: guest_os_ansible_distribution == 'Flatcar'
-
     # It won't work if the file is {{ network_adapter_name }} / netif / netstart
     - name: "Set fact of network config file for '{{ network_adapter_name }}' on FreeBSD"
       ansible.builtin.set_fact:
         network_config_path: "/etc/rc.conf.d/network"
       when: guest_os_family == "FreeBSD"
 
+- name: "Set fact of network config file for '{{ network_adapter_name }}' on {{ vm_guest_os_distribution }}"
+  ansible.builtin.set_fact:
+    network_config_path: "/etc/systemd/network/{{ network_adapter_name }}.network"
+  when: guest_os_network_manager == "systemd-networkd"
