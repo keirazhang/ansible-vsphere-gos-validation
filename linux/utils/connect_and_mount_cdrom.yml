@@ -1,0 +1,101 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Add package repository from local CDROM
+# Parameter:
+#   vm_cdrom_device_num: The CD/DVD device label number, such as 1, 2, etc
+# Return:
+#   guest_cdrom_mount_path: The CD/DVD device mount path in guest OS   
+#
+- name: "Check OS ISO image path is provided by os_installation_iso_list"
+  ansible.builtin.assert:
+    that:
+      - os_installation_iso_list is defined
+      - os_installation_iso_list | length >= 1
+    fail_msg: "Please add OS ISO image path to variable os_installation_iso_list"
+    success_msg: "Get OS ISO image path: {{ os_installation_iso_list[0] }}"
+
+- name: "Initiliaze variables for adding local repository"
+  ansible.builtin.set_fact:
+    guest_cdrom_device: ""
+    guest_cdrom_mount_fact: []
+    guest_cdrom_mount_path: "/mnt/cdrom"
+
+- name: "Get VM CDROM devices"
+  include_tasks: ../../common/vm_get_cdrom_devices.yml
+
+- name: "Set fact of the CDROM device info with ISO image connected "
+  ansible.builtin.set_fact:
+    vm_cdroms_connected_iso: "{{ cdrom_device_list | selectattr('summary', 'startswith', 'ISO') }}"
+
+- name: "Eject all connected CDROM devices"
+  include_tasks: eject_cdrom_in_guest.yml
+  when: vm_cdroms_connected_iso | length > 0
+ 
+- name: "Only keep one CDROM device on VM"
+  include_tasks: ../../common/vm_configure_cdrom.yml
+  vars:
+    cdrom_type: client
+    cdrom_controller_type: "{{ vm_cdrom.controller_label.split()[0] | lower }}"
+    cdrom_controller_num: "{{ vm_cdrom.bus_num }}"
+    cdrom_unit_num: "{{ vm_cdrom.unit_num }}"
+    cdrom_state: absent
+  with_items: "{{ cdrom_device_list[2:] }}"
+  loop_control:
+    loop_var: vm_cdrom
+  when: cdrom_device_list | length > 1
+
+- name: "Connect the first CDROM device to guest OS ISO image"
+  include_tasks: ../../common/vm_connect_cdrom_to_iso.yml
+  vars:
+    vm_cdrom_iso_file: "{{ os_installation_iso_list[0] }}"
+
+- name: "Get CDROM device in guest OS"
+  include_tasks: get_device_list.yml
+  vars:
+    guest_device_type: "rom"
+
+- name: "Check guest OS detected the CDROM device"
+  ansible.builtin.assert:
+    that:
+      - guest_device_list | length == 1
+      - guest_device_list[0].name is defined
+      - guest_device_list[0].name
+    fail_msg: "Failed to detect the CDROM device on {{ vm_guest_os_distribution }}"
+    success_msg: "Successfully detected the CDROM device on {{ vm_guest_os_distribution }}"
+
+- name: "Set fact of the CDROM device name in guest OS"
+  ansible.builtin.set_fact:
+    guest_cdrom_device: "/dev/{{ guest_device_list.name }}"
+
+- name: "Get all filesystem mount points in guest OS"
+  include_tasks: ../../common/get_system_info.yml
+  vars:
+    filter: "ansible_mounts"
+
+- name: "Set the fact of CDROM device mount points"
+  ansible.builtin.set_fact:
+    guest_cdrom_mount_fact: "{{ guest_system_info.ansible_mounts | selectattr('device', 'equalto', guest_cdrom_device) }}"
+  when:
+    - guest_system_info.ansible_mounts is defined
+    - guest_system_info.ansible_mounts | length > 0
+
+- name: "Print CDROM device mount fact"
+  ansible.builtin.debug: var=guest_cdrom_mount_fact
+
+- name: "Umount auto mounted CDROM device"
+  include_tasks: set_mount_point.yml
+  vars:
+    mount_point_path: "{{ item.mount }}"
+    mount_point_src: "{{ item.device }}"
+    mount_state: "unmounted"
+  with_items: "{{ guest_cdrom_mount_fact }}"
+  when: guest_cdrom_mount_fact | length >= 1
+
+- name: "Mount CDROM device to {{ guest_cdrom_mount_path }}"
+  include_tasks: set_mount_point.yml
+  vars:
+    mount_point_path: "{{ guest_cdrom_mount_path }}"
+    mount_point_src: "{{ guest_cdrom_device }}"
+    mount_state: "mounted"
+    mount_fstype: "iso9660"
