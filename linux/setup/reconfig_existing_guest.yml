@@ -50,7 +50,7 @@
 
     # VMware Photon OS needs to disable DNSSEC and DNSOverTLS while connecting online repo
     - name: "Disable DNSSEC and DNSOverTLS settings for VMware Photon OS"
-      include_tasks: set_dns.yml
+      include_tasks: ../utils/set_dns.yml
 
     - name: "Set fact of required packages on VMware Photon OS"
       ansible.builtin.set_fact:

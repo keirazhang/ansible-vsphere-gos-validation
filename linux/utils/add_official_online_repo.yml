@@ -123,9 +123,6 @@
 - name: "Add VMware Photon OS online repositories"
   when: guest_os_ansible_distribution == 'VMware Photon OS'
   block:
-    - name: "Get default RPM GPG key file"
-      include_tasks: get_rpm_gpg_key_file.yml
-
     - name: "Set facts of VMware Photon OS {{ guest_os_ansible_distribution_major_ver }} online repositories"
       ansible.builtin.set_fact:
         photon_repo_names: ["photon-release", "photon-updates"]
@@ -153,7 +150,7 @@
   vars:
     repo_name: "{{ online_repo.name }}"
     repo_baseurl: "{{ online_repo.baseurl }}"
-    gpg_check: "{{ guest_os_family == 'RedHat' }}"
+    gpg_check: "{{ guest_os_family in ['RedHat', 'VMware Photon OS'] }}"
   with_list: "{{ online_repos }}"
   loop_control:
     loop_var: "online_repo"
