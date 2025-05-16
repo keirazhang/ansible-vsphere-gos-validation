@@ -52,7 +52,7 @@
     - name: "Clean all cache and metadata"
       ansible.builtin.command: "{{ clean_cache_cmd }}"
       delegate_to: "{{ vm_guest_ip }}"
-      when: 
+      when:
         - clean_repo_cache is defined
         - clean_repo_cache | bool
 

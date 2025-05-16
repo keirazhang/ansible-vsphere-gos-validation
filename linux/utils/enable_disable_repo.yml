@@ -18,8 +18,8 @@
 
 - name: "Set facts of repository operation and enabled value"
   ansible.builtin.set_fact:
-   repo_op: "{{ repo_state[0:-1] | capitalize }}"
-   repo_enabled: "{{ (repo_state == 'enabled') | ternary(1, 0) }}"
+    repo_op: "{{ repo_state[0:-1] | capitalize }}"
+    repo_enabled: "{{ (repo_state == 'enabled') | ternary(1, 0) }}"
 
 - name: "{{ repo_op }} all repositories"
   when: repo_name is undefined or not repo_name

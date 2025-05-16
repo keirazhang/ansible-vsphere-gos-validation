@@ -1,6 +1,6 @@
 # Copyright 2021-2024 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-#
+---
 # Eject CDROM device in Linux guest OS
 # Parameters:
 #   guest_cdrom_device_num: If defined, the specified cdrom device will be ejected.

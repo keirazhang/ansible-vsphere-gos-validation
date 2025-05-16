@@ -1,6 +1,6 @@
 # Copyright 2021-2024 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-#
+---
 # Get guest OS system firmware is EFI or not
 # Return:
 #   guest_firmware_is_efi: return true if the system firmware is EFI, otherwise return false.
@@ -34,6 +34,6 @@
     - name: "Set fact that guest OS system firmware is EFI"
       ansible.builtin.set_fact:
         guest_firmware_is_efi: true
-      when: 
+      when:
         - kldstat_efirt_result.rc is defined
         - kldstat_efirt_result.rc == 0

@@ -221,5 +221,3 @@
         replace: "#\\1"
       delegate_to: "{{ vm_guest_ip }}"
       when: guest_os_ansible_distribution == "Ubuntu"
-
-

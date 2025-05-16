@@ -1,8 +1,9 @@
 # Copyright 2021-2024 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-#
+---
 # Get network config files for Ubuntu Server,
 # different distributions have different network config files
+#
 - block:
     - name: Get all files of dir /etc/netplan
       ansible.builtin.command: ls /etc/netplan/
