@@ -1,11 +1,10 @@
 # Copyright 2021-2024 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
----
 # Get the path to vmware-toolbox-cmd in Linux guests
 # This task shall be executed when VMTools/OVT is installed
 # Return:
 #    vmware_toolbox_cmd_path: the path to vmware-toolbox-cmd
-#
+
 - name: "Initialize the path to vmware-toolbox-cmd"
   ansible.builtin.set_fact:
     vmware_toolbox_cmd_path: ""
