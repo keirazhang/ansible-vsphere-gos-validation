@@ -26,5 +26,43 @@
   include_tasks: add_official_online_repo.yml
   when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
 
+- name: "Add user defined open-vm-tools repository from URL"
+  include_tasks: add_extra_online_repo.yml
+  vars:
+    extra_repo_name: "open-vm-tools-repo"
+    extra_repo_baseurl: "{{ linux_ovt_repo_url }}"
+  when:
+    - current_testcase_name is defined
+    - current_testcase_name == "ovt_verify_pkg_install"
+    - guest_os_ansible_system == "linux"
+    - linux_ovt_install_type == "package"
+    - linux_ovt_repo_url is defined
+    - linux_ovt_repo_url
+
+- name: "Add online repositories for open-vm-tools installation testing"
+  when:
+    - current_testcase_name is defined
+    - current_testcase_name in ["ovt_verify_pkg_install", "ovt_verify_src_install"]
+  block:
+    - name: "Add online repositories for development packages on {{ vm_guest_os_distribution }}"
+      include_tasks: add_extra_online_repo.yml
+      vars:
+        extra_repo_name: "open-vm-tools-repo"
+        extra_repo_baseurl: "{{ linux_ovt_repo_url }}"
+      when:
+        - current_testcase_name == "ovt_verify_pkg_install"
+        - guest_os_ansible_system == "linux"
+        - linux_ovt_install_type == "package"
+        - linux_ovt_repo_url is defined
+        - linux_ovt_repo_url
+    
+    - name: "Add online development packages repository on {{ vm_guest_os_distribution }}"
+      include_tasks: rhel_add_devel_repo.yml
+      when:
+        - current_testcase_name == "ovt_verify_src_install"
+        - linux_ovt_install_type == "source"
+        - guest_os_ansible_distribution == "RedHat"
+        - guest_os_ansible_distribution_major_ver | int > 7
+
 - name: "Update packages metadata"
   include_tasks: repo_update.yml
