@@ -6,6 +6,11 @@
 - name: "Set facts of config files for building and checking open-vm-tools"
   ansible.builtin.set_fact:
     ovt_install_prefix: "{{ '/usr' if guest_os_ansible_system == 'linux' else '/usr/local' }}"
+    ovt_install_lib: |-
+      {%- if guest_os_ansible_system == 'freebsd' -%}/usr/local/lib
+      {%- elif guest_os_family == 'RedHat' -%}/usr/lib64
+      {%- else -%}/usr/lib
+      {%- endif -%}
     ovt_build_config_file_tmpl: "{{ guest_os_ansible_system }}_ovt_build_config.tmpl"
     ovt_build_config_file_path: "{{ current_test_log_folder }}/ovt_build_config.yml"
     ovt_check_config_file_tmpl: "{{ guest_os_ansible_system }}_ovt_check_config.tmpl"
@@ -24,6 +29,13 @@
   vars:
     _ovt_build_config: "{{ lookup('file', ovt_build_config_file_path) | from_yaml }}"
 
+- name: "Add --without-x to configure options because {{ vm_guest_os_distribution }} doesn't have GTK3"
+  ansible.builtin.set_fact:
+    ovt_configure_options: "{{ ovt_configure_options | union(['--without-x']) }}"
+  when:
+    - guest_os_ansible_system == 'linux'
+    - ovt_dependencies | select('search', 'gtk[^0-9]*3') | length < 2
+
 - name: "Check open-vm-tools dependencies are not empty"
   ansible.builtin.assert:
     that:
@@ -41,7 +53,7 @@
   include_tasks: ../utils/install_uninstall_package.yml
   vars:
     package_list: "{{ ovt_dependencies }}"
-    package_repo_enabled: true
+    package_repo_enable: false
 
 - name: "Set facts of open-vm-tools directory for downloading source tarball"
   ansible.builtin.set_fact:
@@ -59,7 +71,7 @@
   ansible.builtin.get_url:
     url: "{{ linux_ovt_tarball_url }}"
     dest: "{{ guest_ovt_download_dir }}"
-    validate_certs: false
+    validate_certs: False
     mode: "0644"
   delegate_to: "{{ vm_guest_ip }}"
   register: ovt_tarball_download_result
@@ -68,7 +80,7 @@
   ansible.builtin.unarchive:
     src: "{{ ovt_tarball_download_result.dest }}"
     dest: "{{ guest_ovt_download_dir }}"
-    remote_src: true
+    remote_src: True
   delegate_to: "{{ vm_guest_ip }}"
 
 - name: "Search open-vm-tools configure.ac file"
@@ -107,7 +119,7 @@
   ansible.builtin.debug: var=ovt_configure_options
 
 - name: "Install open-vm-tools from source"
-  ansible.builtin.shell: "{{ guest_ovt_installer_path }} {{ ' '.join(ovt_configure_options) }} >{{ guest_ovt_installer_log }}"
+  ansible.builtin.shell: "{{ guest_ovt_installer_path }} {{ ' '.join(ovt_configure_options) }} > {{ guest_ovt_installer_log }}"
   args:
     chdir: "{{ guest_ovt_source_dir }}"
   environment:

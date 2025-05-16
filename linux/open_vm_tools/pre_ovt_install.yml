@@ -84,7 +84,9 @@
     skip_reason: "Not Supported"
   when:
     - linux_ovt_install_type == "source"
-    - guest_os_family not in ["Suse", "Debian", "FreeBSD"]
+    - (guest_os_ansible_distribution == 'ProLinux' or
+       (guest_os_ansible_distribution == 'RedHat' and
+        guest_os_ansible_distribution_major_ver | int < 8))
 
 - name: "Initialize fact whether to uninstall open-vm-tools"
   ansible.builtin.set_fact:
