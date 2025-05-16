@@ -10,7 +10,8 @@
 #     If package_state is 'latest', installed packages in package_list will be upgraded, and missing
 #       packages will be installed.
 #     If package_state is 'absent' or 'removed', installed packages in package_list will be uninstalled.
-#   package_repo_enable (optional): Default value is true, then it will configure guest OS package repositories.
+#   package_repo_enabled (optional): Whether package repositories have been enabled. Default value is false,
+#     and then it will configure and enable package repositories before installing packages.
 #
 - name: "Set default value of package_state to 'present'"
   ansible.builtin.set_fact:
@@ -76,7 +77,7 @@
       include_tasks: config_repo.yml
       when:
         - package_state in ['installed', 'latest', 'present']
-        - package_repo_enable | default(true)
+        - not (package_repo_enabled | default(false))
 
     - name: "{{ package_manage_op }} packages on {{ guest_os_ansible_distribution }}"
       when: guest_os_ansible_distribution in ["VMware Photon OS", "FreeBSD"]

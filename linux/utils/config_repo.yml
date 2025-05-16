@@ -4,8 +4,7 @@
 # Config package repositories for guest OS release
 # If local DVD repositories or online repositories have been configured
 # while reconfiguring existing VM, the local DVD mount will be lost after VM reboot.
-# In such case, user can just execute connect_and_mount_iso.yml to connect and mount
-# the ISO again, and no need to add repositories any more.
+# In such case, user can just add local DVD repositories after reboot.
 #
 - name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
   include_tasks: enable_disable_repo.yml
@@ -16,26 +15,13 @@
     guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
     guest_os_family == 'Suse'
 
-# Local repositories might be invalid after VM reboot, so we will always configure them
-# at necessary
 - name: "Connect CDROM and add local repositories on {{ vm_guest_os_distribution }}"
+  include_tasks: add_local_dvd_repo.yml
   when:
     - guest_os_family in ['Suse', 'RedHat']
     - os_installation_iso_list is defined
     - os_installation_iso_list | length > 0
-  block:
-    - name: "Connect CDROM device to ISO image and mount it"
-      include_tasks: connect_and_mount_cdrom.yml
 
-    # If the local DVD repositories have been configured while reconfiguring
-    # existing VM, this task can be skipped.
-    - name: "Add local DVD repo"
-      include_tasks: add_local_dvd_repo.yml
-      vars:
-        dvd_mount_path: "{{ guest_cdrom_mount_path }}"
-
-# If online repositories have been configured while reconfiguring
-# existing VM, this task can be skipped.
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_official_online_repo.yml
   when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
