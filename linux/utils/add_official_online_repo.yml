@@ -56,12 +56,11 @@
 
     # In case there are pre-configured online repositories which can be used
     - name: "Enable existing online repositories for {{ guest_os_ansible_distribution }}"
-      include_tasks: enable_disable_repo.yml
+      include_tasks: enable_disable_repos.yml
       vars:
-        repo_name: "{{ item | lower }}"
+        repo_ids: "{{ guest_online_repo_ids }}"
         repo_state: "enabled"
         repo_state_ignore_errors: true
-      with_items: "{{ guest_online_repo_ids }}"
 
     - name: "Set online repositories for {{ vm_guest_os_distribution }}"
       ansible.builtin.set_fact:

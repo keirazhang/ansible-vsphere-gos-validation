@@ -7,7 +7,7 @@
 # In such case, user can just add local DVD repositories after reboot.
 #
 - name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
-  include_tasks: enable_disable_repo.yml
+  include_tasks: enable_disable_repos.yml
   vars:
     repo_state: "disabled"
     repo_state_ignore_errors: true

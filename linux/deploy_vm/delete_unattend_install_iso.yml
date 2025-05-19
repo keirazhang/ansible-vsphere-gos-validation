@@ -23,7 +23,7 @@
     cdrom_controller_num: "{{ vm_cdrom.controller_number | int }}"
     cdrom_unit_num: "{{ vm_cdrom.unit_number | int }}"
     cdrom_state: absent
-  with_items: "{{ vm_cdroms[2:] }}"
+  with_items: "{{ vm_cdroms[1:] }}"
   loop_control:
     loop_var: vm_cdrom
   when: vm_cdroms | length > 1

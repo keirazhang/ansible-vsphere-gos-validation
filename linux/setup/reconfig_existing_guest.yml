@@ -13,7 +13,7 @@
   when: guest_os_ansible_distribution in ["Ubuntu"]
 
 - name: "Configure OS package repositories"
-  include_tasks: ../utils/config_repo.yml
+  include_tasks: ../utils/config_repos.yml
 
 # 'python3-libdnf5' is required by dnf5 module
 - name: "Install 'python3-libdnf5' on {{ guest_os_ansible_distribution }}"

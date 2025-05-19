@@ -1,0 +1,85 @@
+# Copyright 2025 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+---
+# Enable or disable one or all package reposiotories
+# Parameter
+#   repo_state: The state of repository: enabled or disabled.
+#   repo_ids (Optional): A list of repository ids to enable or disable
+#     If it is not set, all repositories will be enabled or disabled.
+#   repo_state_ignore_errors (Optional): Whether to ignore errors when enabling or disabling repositories.
+#     The default value is false.
+#
+- name: "Check repo_state is set"
+  ansible.builtin.assert:
+    that:
+      - repo_state is defined
+      - repo_state in ['enabled', 'disabled']
+    fail_msg: "Parameter 'repo_state' must be set as 'enabled' or 'disabled'"
+
+- name: "Set facts of repository operation and enabled value"
+  ansible.builtin.set_fact:
+    repo_op: "{{ repo_state[0:-1] | capitalize }}"
+    repo_enabled: "{{ (repo_state == 'enabled') | ternary(1, 0) }}"
+
+- name: "Get all repositories on {{ vm_guest_os_distribution }}"
+  when: repo_ids is undefined or not repo_ids
+  block:
+    - name: "Set fact of the command to list all repository ids"
+      ansible.builtin.set_fact:
+        list_repo_cmd:
+          {%- if guest_os_ansible_pkg_mgr in ['yum', 'tdnf'] -%}{{ guest_os_ansible_pkg_mgr }} repolist | sed '0,/repo id/d' | awk '{print $1}'
+          {%- elif guest_os_ansible_pkg_mgr is match('dnf.*') -%}dnf repolist | sed '0,/repo id/d' | awk '{print $1}'
+          {%- elif guest_os_ansible_pkg_mgr == 'zypper' -%}zypper lr | grep -E '^[0-9]'  | awk -F '|' '{print $2}'
+          {%- endif -%}
+
+    - name: "List all repositories on {{ vm_guest_os_distribution }}"
+      ansible.builtin.shell: "{{ list_repo_cmd }}"
+      delegate_to: "{{ vm_guest_ip }}"
+      ignore_errors: true
+      register: list_repo_result
+      when: list_repo_cmd
+
+    - name: "Set fact of repository ids on {{ vm_guest_os_distribution }}"
+      ansible.builtin.set_fact:
+        repo_ids: "{{ list_repo_result.stdout_lines | map('trim') }}"
+      when:
+        - list_repo_result is defined
+        - list_repo_result.stdout_lines is defined
+        - list_repo_result.stdout_lines | length > 0
+
+- name: "{{ repo_op }} repositories on {{ vm_guest_os_distribution }}"
+  when: repo_ids | length > 0
+  block:
+    # RedHat family
+    - name: "{{ repo_op }} repositories for {{ vm_guest_os_distribution }}"
+      when: guest_os_family == 'RedHat'
+      block:
+        - name: "{{ repo_op }} yum repositories on {{ vm_guest_os_distribution }}"
+          ansible.builtin.command: "yum-config-manager --{{ repo_state }} {{ item }}"
+          delegate_to: "{{ vm_guest_ip }}"
+          with_items: "{{ repo_ids }}"
+          ignore_errors: "{{ repo_state_ignore_errors | default(omit) }}"
+          when: guest_os_ansible_pkg_mgr == "yum"
+
+        - name: "{{ repo_op }} dnf repositories on {{ vm_guest_os_distribution }}"
+          ansible.builtin.command: "dnf config-manager --set-{{ repo_state }} {{ item }}"
+          delegate_to: "{{ vm_guest_ip }}"
+          with_items: "{{ repo_ids }}"
+          ignore_errors: "{{ repo_state_ignore_errors | default(omit) }}"
+          when: guest_os_ansible_pkg_mgr is match('dnf')
+
+    # VMware Photon OS
+    - name: "{{ repo_op }} yum repositories on {{ vm_guest_os_distribution }}"
+      ansible.builtin.shell: "grep -l '\\[{{ item }}\\]' /etc/yum.repos.d/*.repo | xargs sed -i 's/enabled *= *1/enabled={{ repo_enabled }}/'"
+      delegate_to: "{{ vm_guest_ip }}"
+      with_items: "{{ repo_ids }}"
+      ignore_errors: "{{ repo_state_ignore_errors | default(omit) }}"
+      when: guest_os_ansible_distribution == 'VMware Photon OS'
+
+    # SUSE family
+    - name: "{{ repo_op }} zypper repositories on {{ vm_guest_os_distribution }}"
+      ansible.builtin.command: "zypper modifyrepo --{{ repo_op | lower }} {{ item }}"
+      delegate_to: "{{ vm_guest_ip }}"
+      with_items: "{{ repo_ids }}"
+      ignore_errors: "{{ repo_state_ignore_errors | default(omit) }}"
+      when: guest_os_family == "Suse"
