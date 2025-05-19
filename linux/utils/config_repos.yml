@@ -6,7 +6,7 @@
 # while reconfiguring existing VM, the local DVD mount will be lost after VM reboot.
 # In such case, user can just add local DVD repositories after reboot.
 #
-- name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
+- name: "Disable all existing repositories on {{ vm_guest_os_distribution }}"
   include_tasks: enable_disable_repos.yml
   vars:
     repo_state: "disabled"

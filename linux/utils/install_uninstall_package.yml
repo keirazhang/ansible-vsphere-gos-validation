@@ -84,10 +84,7 @@
       block:
         - name: "Set facts of packages and command for {{ guest_os_ansible_distribution }}"
           ansible.builtin.set_fact:
-            package_manager: |-
-              {%- if guest_os_ansible_distribution == "VMware Photon OS" -%}tdnf
-              {%- else -%}pkg
-              {%- endif -%}
+            package_manager: "{{ (guest_os_ansible_distribution == 'VMware Photon OS') | ternary('tdnf', 'pkg') }}"
 
         - name: "Set the command to {{ package_manage_op | lower }} packages on {{ guest_os_ansible_distribution }}"
           ansible.builtin.set_fact:

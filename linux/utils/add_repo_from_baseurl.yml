@@ -41,12 +41,10 @@
             msg: "Can't not add repository when GPG check is enabled but RPM GPG key is not found."
           when: not guest_rpm_gpg_key_path
 
-        - name: "Update local yum repository base URL"
-          ansible.builtin.set_fact:
-            repo_baseurl: "file://{{ repo_baseurl }}"
-          when:
-            - repo_baseurl is sequence
-            - repo_baseurl[0] == '/'
+    - name: "Update local yum repository base URL"
+      ansible.builtin.set_fact:
+        repo_baseurl: "file://{{ repo_baseurl }}"
+      when: repo_baseurl.startswith('/')
 
     - name: "Add repository {{ repo_name }} from {{ repo_baseurl }}"
       ansible.builtin.yum_repository:
@@ -84,9 +82,7 @@
     - name: "Update local zypper repository base URL"
       ansible.builtin.set_fact:
         repo_baseurl: "dir:{{ repo_baseurl }}"
-      when:
-        - repo_baseurl is sequence
-        - repo_baseurl[0] == '/'
+      when: repo_baseurl.startswith('/')
 
     - name: "Add zypper repository {{ repo_name }}"
       community.general.zypper_repository:
@@ -111,4 +107,5 @@
         filename: "{{ repo_name }}.list"
         repo: "{{ apt_source }}"
         state: "present"
+        update_cache: true
       delegate_to: "{{ vm_guest_ip }}"

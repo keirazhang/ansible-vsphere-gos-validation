@@ -136,13 +136,13 @@
       ansible.builtin.set_fact:
         online_repos: "{{ online_repos | default([]) | union([{'name': item, 'baseurl': repo_baseurl}]) }}"
       vars:
-        repo_baseurl: "https://packages.vmware.com/photon/$releasever/{{ item | replace('-', '_') }}_$releasever_$basearch"
+        repo_baseurl: "https://packages-prod.broadcom.com/photon/$releasever/{{ item | replace('-', '_') }}_$releasever_$basearch"
       with_items: "{{ photon_repo_names }}"
 
     - name: "Update repo's baseurl"
       ansible.builtin.command: "sed -i 's#dl.bintray.com/vmware/#packages.vmware.com/photon/$releasever/#' /etc/yum.repos.d/{{ item }}.repo"
       delegate_to: "{{ vm_guest_ip }}"
-      with_items: "{{ photon_online_repos }}"
+      with_items: "{{ photon_repo_names }}"
 
 - name: "Add online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_repo_from_baseurl.yml
