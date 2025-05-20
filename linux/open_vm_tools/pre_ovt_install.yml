@@ -112,19 +112,3 @@
 
 - name: "Configure packages repositories"
   include_tasks: ../utils/config_repos.yml
-
-- name: "Add user defined open-vm-tools repository"
-  when:
-    - guest_os_ansible_system == "linux"
-    - linux_ovt_install_type == "package"
-    - linux_ovt_repo_url is defined
-    - linux_ovt_repo_url
-  block:
-    - name: "Add user defined open-vm-tools online repository on {{ vm_guest_os_distribution }}"
-      include_tasks: ../utils/add_repo_from_baseurl.yml
-      vars:
-        repo_name: "open-vm-tools"
-        repo_baseurl: "{{ linux_ovt_repo_url }}"
-
-    - name: "Update packages metadata"
-      include_tasks: ../utils/repo_update.yml

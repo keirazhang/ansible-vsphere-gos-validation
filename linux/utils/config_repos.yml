@@ -6,11 +6,10 @@
 # while reconfiguring existing VM, the local DVD mount will be lost after VM reboot.
 # In such case, user can just add local DVD repositories after reboot.
 #
-- name: "Disable all existing repositories on {{ vm_guest_os_distribution }}"
+- name: "Disable all existing repositories for {{ vm_guest_os_distribution }}"
   include_tasks: enable_disable_repos.yml
   vars:
     repo_state: "disabled"
-    repo_state_ignore_errors: true
   when: >-
     guest_os_ansible_distribution in ['RedHat', 'ProLinux'] or
     guest_os_family == 'Suse'
@@ -25,6 +24,30 @@
 - name: "Add guest OS official online repositories for {{ vm_guest_os_distribution }}"
   include_tasks: add_official_online_repo.yml
   when: guest_os_ansible_distribution not in ['SLES', 'SLED', 'RedHat', 'ProLinux', 'FreeBSD']
+
+- name: "Add online repositories for installing open-vm-tools"
+  when:
+    - current_testcase_name is defined
+    - current_testcase_name is match("ovt_verify_(pkg|src)_install")
+    - linux_ovt_install_type is defined
+  block:
+    - name: "Add user defined open-vm-tools online repository on {{ vm_guest_os_distribution }}"
+      include_tasks: add_repo_from_baseurl.yml
+      vars:
+        repo_name: "open-vm-tools-repo"
+        repo_baseurl: "{{ linux_ovt_repo_url }}"
+      when:
+        - linux_ovt_install_type == "package"
+        - guest_os_ansible_system == "linux"
+        - linux_ovt_repo_url is defined
+        - linux_ovt_repo_url
+ 
+    - name: "Add online development packages repository on {{ vm_guest_os_distribution }}"
+      include_tasks: rhel_add_devel_repo.yml
+      when:
+        - linux_ovt_install_type == "source"
+        - guest_os_ansible_distribution == "RedHat"
+        - guest_os_ansible_distribution_major_ver | int > 7
 
 - name: "Update packages metadata"
   include_tasks: repo_update.yml

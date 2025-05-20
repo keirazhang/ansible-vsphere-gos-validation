@@ -43,14 +43,13 @@
 
     - name: "Update local yum repository base URL"
       ansible.builtin.set_fact:
-        repo_baseurl: "file://{{ repo_baseurl }}"
-      when: repo_baseurl.startswith('/')
+        repo_prefix: "{{ (repo_baseurl.startswith('/')) | ternary('file://', '') }}"
 
     - name: "Add repository {{ repo_name }} from {{ repo_baseurl }}"
       ansible.builtin.yum_repository:
         name: "{{ repo_name }}"
         description: "{{ repo_description | default(repo_name) }}"
-        baseurl: "{{ repo_baseurl }}"
+        baseurl: "{{ repo_prefix }}{{ repo_baseurl }}"
         mirrorlist: "{{ repo_mirrorlist | default(omit) }}"
         enabled: true
         gpgcheck: "{{ gpg_check | default(false) }}"
@@ -81,13 +80,12 @@
   block:
     - name: "Update local zypper repository base URL"
       ansible.builtin.set_fact:
-        repo_baseurl: "dir:{{ repo_baseurl }}"
-      when: repo_baseurl.startswith('/')
+        repo_prefix: "{{ (repo_baseurl.startswith('/')) | ternary('dir:', '') }}"
 
     - name: "Add zypper repository {{ repo_name }}"
       community.general.zypper_repository:
         name: "{{ repo_name }}"
-        repo: "{{ repo_baseurl }}"
+        repo: "{{ repo_prefix }}{{ repo_baseurl }}"
         state: "present"
         disable_gpg_check: true
         enabled: true
