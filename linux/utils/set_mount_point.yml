@@ -78,6 +78,6 @@
       retries: 10
       delay: 5
       ignore_errors: true
-
+    
     - name: "Print the result of waiting for device unmounted"
       ansible.builtin.debug: var=wait_device_unmounted
