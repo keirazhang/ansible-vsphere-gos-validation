@@ -50,10 +50,7 @@
         - name: "Set fact of GOSC support status to False for VMware Photon OS with not bundled open-vm-tools"
           ansible.builtin.set_fact:
             gosc_is_supported: false
-          when:
-            - package_info is defined
-            - package_info.Release is defined
-            - "'ph' not in package_info.Release | string"
+          when: not (package_info.Release is defined and ('ph' in package_info.Release | string))
 
         - name: "Skip test case for not bundled open-vm-tools"
           include_tasks: ../../common/skip_test_case.yml
