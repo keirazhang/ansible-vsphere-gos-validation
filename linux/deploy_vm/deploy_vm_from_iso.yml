@@ -227,27 +227,36 @@
       include_tasks: ../utils/wait_for_service_status.yml
       vars:
         wait_service_name: "systemd-logind"
-        wait_service_status: "running"
-        wait_service_ignore_errors: true
+        wait_service_state: "running"
+#        wait_service_ignore_errors: true
 
-    - name: "Check guest OS desktop status"
-      when: guest_os_family in ["RedHat", "Suse", "Debian"]
+    - name: "Set fact of desktop environment is not ready in guest OS"
+      ansible.builtin.set_fact:
+        guest_desktop_not_ready: "{{ guest_os_family in ['RedHat', 'Suse', 'Debian'] and
+                                     guest_os_display_manager_service is defined and 
+                                     guest_os_display_manager_service and
+                                     not guest_os_with_gui }}"
+
+    - name: "Wait for guest OS desktop environment ready"
+      when: guest_desktop_not_ready
       block:
         # Wait for 'display-manager' service running if it exists
         # Even though it is not running at last, it is OK because
         # it is not mandatory.
-        - name: "Wait for service 'display-manager' service is running"
+        - name: "Wait for display manager service '{{ guest_os_display_manager_service }}' running"
           include_tasks: ../utils/wait_for_service_status.yml
           vars:
-            wait_service_name: "display-manager"
-            wait_service_status: "running"
+            wait_service_name: "{{ guest_os_display_manager_service }}"
+            wait_service_state: "running"
             wait_service_ignore_errors: true
 
         # Check guest OS desktop again in case it is not ready
         # when getting linux system info at the first time
         - name: "Update facts about guest OS desktop environment"
           include_tasks: ../utils/check_guest_os_gui.yml
-          when: service_info
+          when:
+            - wait_service_exists
+            - wait_service_current_state == 'running'
 
 - name: "Upgrade Oracle Linux 9.0 kernel from UEK R7 GA to latest UEK R7"
   when:
