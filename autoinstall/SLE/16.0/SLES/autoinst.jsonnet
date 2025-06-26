@@ -32,7 +32,8 @@ local nicName = agama.findByID(agama.lshw, 'network').logicalname;
     ],
     packages: [
       "openssh-server-config-rootlogin",
-      "cloud-init"
+      "cloud-init",
+      "open-vm-tools-desktop"
     ]
   },
 {% if new_user is defined and new_user %}
