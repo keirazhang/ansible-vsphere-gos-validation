@@ -12,18 +12,19 @@
 - name: "Hot remove the new network adapter from VM"
   include_tasks: ../../common/vm_remove_network_adapter.yml
   vars:
-    netadapter_mac_addr: "{{ new_network_adapter_mac_addr }}"
+    netadapter_mac_addr: "{{ new_network_adapter_mac }}"
     vm_remove_adapter_ignore_errors: true
 
 - name: "Network adapter hot-remove succeeded"
   ansible.builtin.debug:
-    msg: "Successfully hot removed new {{ adapter_type }} network adapter {{ new_network_adapter }}"
+    msg: "Successfully hot removed new {{ adapter_type }} network adapter {{ new_network_adapter_name }}"
   when:
     - remove_adapter.changed is defined
     - remove_adapter.changed
 
 - name: "Network adapter hot-remove failed"
   when: >-
+    esxi_cpu_vendor != 'arm' and
     (remove_adapter.changed is undefined or
      not remove_adapter.changed)
   block:
@@ -44,7 +45,7 @@
         - guest_os_ansible_distribution == "OracleLinux"
         - guest_os_ansible_distribution_ver == '8.8'
 
-    - name: "Failed to hot remove new {{ adapter_type }} network adapter {{ new_network_adapter }}"
+    - name: "Failed to hot remove new {{ adapter_type }} network adapter {{ new_network_adapter_name }}"
       ansible.builtin.fail:
         msg: "{{ remove_adapter }}"
 
@@ -63,17 +64,18 @@
     dmesg_options: '-c'
     dmesg_output_file_name: 'dmesg_after_nic_hot_remove.log'
     dmesg_check_call_trace: true
+  when: esxi_cpu_vendor != 'arm'
 
 - name: "Get network adapter status after hot-remove"
   include_tasks: ../utils/get_network_adapters_status.yml
 
 - name: "Set fact of network adapter info after hot-remove"
   ansible.builtin.set_fact:
-    network_adapters_after_hotremove: "{{ guest_network_adapters }}"
+    network_macs_after_remove: "{{ guest_network_adapters_mac }}"
 
 - name: "Assert new {{ adapter_type }} adapter interface is removed"
   ansible.builtin.assert:
     that:
-      - network_adapters_after_hotremove | difference(network_adapters_before_hotadd) | length == 0
+      - network_macs_after_remove | difference(network_macs_before_add) | length == 0
     fail_msg: "After hot removing the new network adapter from VM {{ vm_name }}, guest OS still can detect it"
     success_msg: "The new {{ adapter_type }} adapter interface is removed in guest OS on VM {{ vm_name }}"

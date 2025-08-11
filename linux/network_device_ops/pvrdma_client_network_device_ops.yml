@@ -104,7 +104,7 @@
     - name: "Check the result of pinging gateway from client VM"
       ansible.builtin.assert:
         that:
-          - ping_success_after_hotadd | bool
+          - ping_success_after_add | bool
         fail_msg: "Failed to ping gateway from PVRDMA device on client VM {{ vm_name }}"
 
     - name: "Update client VM guest IP when it changes"
