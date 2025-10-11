@@ -173,6 +173,12 @@
 
     - name: "Check guest customization results"
       include_tasks: linux_gosc_verify.yml
+
+    - name: "Take a snapshot at GOSC completion"
+      include_tasks: ../../common/vm_take_snapshot.yml
+      vars:
+        snapshot_name: "{{ current_testcase_name }}_{{ current_test_timestamp }}"
+        dump_memory: true
   rescue:
     - name: "Test case failure"
       include_tasks: ../../common/test_rescue.yml
